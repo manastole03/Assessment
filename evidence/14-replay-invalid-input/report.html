@@ -1,0 +1,65 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1"><title>Run report</title><style>
+:root{--bg:#fbfbf9;--fg:#1d1d1b;--muted:#6b6b66;--line:#e4e3dc;--card:#fff;--ok:#1f7a4d;--warn:#a86a00;
+--bad:#b3261e;--biz:#7a3fa0;--info:#1f5fa8}
+@media (prefers-color-scheme:dark){:root{--bg:#161614;--fg:#ecebe6;--muted:#9c9b94;--line:#2e2d29;--card:#1e1e1b}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font:14px/1.5 ui-sans-serif,system-ui,-apple-system,Segoe UI,sans-serif}
+main{max-width:1100px;margin:0 auto;padding:24px 16px 64px}h1{font-size:20px;margin:0 0 4px}h2{font-size:15px;margin:28px 0 8px}
+.meta{color:var(--muted);font-size:13px}.pill{display:inline-block;padding:1px 8px;border-radius:999px;font-size:12px;font-weight:600;color:#fff}
+.succeeded{background:var(--ok)}.failed{background:var(--bad)}.business_outcome{background:var(--biz)}.unknown{background:var(--muted)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px 16px;margin-top:14px}
+dl{display:grid;grid-template-columns:max-content 1fr;gap:6px 16px;margin:0}dt{color:var(--muted)}dd{margin:0;word-break:break-word}
+table{width:100%;border-collapse:collapse;background:var(--card);border:1px solid var(--line);border-radius:8px;overflow:hidden}
+td{padding:6px 10px;border-top:1px solid var(--line);vertical-align:top}td.t{color:var(--muted);white-space:nowrap;width:70px;font-variant-numeric:tabular-nums}
+td.k{white-space:nowrap;width:190px;font-family:ui-monospace,Menlo,monospace;font-size:12px}
+.k.step{color:var(--info)}.k.handler,.k.recovery{color:var(--warn)}.k.intervention,.k.human,.k.control{color:var(--biz)}.k.run,.k.discovery{font-weight:700}
+.k.policy,.k.failure{color:var(--bad)}.k.agent{color:var(--info)}.k.locator{color:var(--warn)}
+pre{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:12px;overflow:auto;font-size:12px;white-space:pre-wrap}
+img.shot{max-width:320px;border:1px solid var(--line);border-radius:4px;display:block;margin-top:6px;cursor:zoom-in}
+img.shot.big{max-width:100%}.detail{color:var(--muted);font-size:12px;word-break:break-word}.detail b{color:var(--fg)}
+ul{margin:4px 0;padding-left:18px}code{font-family:ui-monospace,Menlo,monospace;font-size:12px}
+</style></head>
+<body><main><h1>legacycore.member.get_savings_balance@1.0.3</h1>
+<div class="meta"><span class="pill failed">failed</span> · replay
+ · run <code>20261001T043240Z-replay-legacycore-member-get-savings-balance-ac-866e</code> · 3 events</div>
+<div class="card"><dl><dt>capability</dt><dd><code>legacycore.member.get_savings_balance@1.0.3</code> · sha256:1608fb7ffdcf839e</dd><dt>layers</dt><dd><ul><li>capability legacycore.member.get_savings_balance@1.0.3 (5ba5110e28a7)</li><li>app legacycore (daa7527aa8f0)</li></ul></dd><dt>tenant</dt><dd>acme</dd><dt>failure</dt><dd><code>INVALID_INPUT</code> input &#x27;member_id&#x27; does not match the required pattern ^[0-9]{5,10}$</dd><dt>expected</dt><dd>—</dd><dt>observed</dt><dd><pre>—</pre></dd><dt>retryable</dt><dd>False</dd><dt>screenshot</dt><dd><img class="shot" src="screens/0002-failure-invalid-input.jpg" onclick="this.classList.toggle('big')"></dd></dl></div>
+<h2>Timeline</h2><table><tr><td class="t">0.2s</td><td class="k run">run.started</td><td class="detail"><b>kind</b>: replay · <b>run_id</b>: 20261001T043240Z-replay-legacycore-member-get-savings-balance-ac-866e · <b>subject</b>: legacycore.member.get_savings_balance@1.0.3 · <b>tenant</b>: acme · <b>evidence_dir</b>: runs/20261001T043240Z-replay-legacycore-member-get-savings-balance-ac-866e · <b>layers</b>: [&quot;capability legacycore.member.get_savings_balance@1.0.3 (5ba5110e28a7)&quot;, &quot;app legacycore (daa7527aa8f0)&quot;] · <b>effective_hash</b>: sha256:1608fb7ffdcf839e · <b>inputs</b>: [&quot;member_id&quot;]</td></tr><tr><td class="t">0.2s</td><td class="k evidence">evidence.captured</td><td class="detail"><b>failure-INVALID_INPUT</b><img class="shot" loading="lazy" src="screens/0002-failure-invalid-input.jpg" onclick="this.classList.toggle('big')"></td></tr><tr><td class="t">0.2s</td><td class="k run">run.finished</td><td class="detail"><b>status</b>: failed · <b>duration_ms</b>: 45 · <b>outcome</b>: None · <b>failure</b>: INVALID_INPUT</td></tr></table><h2>Raw</h2><details><summary>result.json</summary><pre>{
+  &quot;run_id&quot;: &quot;20261001T043240Z-replay-legacycore-member-get-savings-balance-ac-866e&quot;,
+  &quot;capability&quot;: {
+    &quot;id&quot;: &quot;legacycore.member.get_savings_balance&quot;,
+    &quot;version&quot;: &quot;1.0.3&quot;,
+    &quot;effective_hash&quot;: &quot;sha256:1608fb7ffdcf839e&quot;,
+    &quot;layers&quot;: [
+      &quot;capability legacycore.member.get_savings_balance@1.0.3 (5ba5110e28a7)&quot;,
+      &quot;app legacycore (daa7527aa8f0)&quot;
+    ]
+  },
+  &quot;tenant&quot;: &quot;acme&quot;,
+  &quot;status&quot;: &quot;failed&quot;,
+  &quot;outputs&quot;: null,
+  &quot;outcome&quot;: null,
+  &quot;failure&quot;: {
+    &quot;code&quot;: &quot;INVALID_INPUT&quot;,
+    &quot;message&quot;: &quot;input &#x27;member_id&#x27; does not match the required pattern ^[0-9]{5,10}$&quot;,
+    &quot;app_code&quot;: null,
+    &quot;capability&quot;: &quot;legacycore.member.get_savings_balance@1.0.3&quot;,
+    &quot;step_id&quot;: null,
+    &quot;step_index&quot;: null,
+    &quot;step_intent&quot;: null,
+    &quot;expected&quot;: null,
+    &quot;observed&quot;: null,
+    &quot;retryable&quot;: false,
+    &quot;evidence&quot;: {
+      &quot;screenshot&quot;: &quot;screens/0002-failure-invalid-input.jpg&quot;,
+      &quot;observation&quot;: &quot;screens/0002-failure-invalid-input.txt&quot;,
+      &quot;dom&quot;: &quot;dom/0002-failure-invalid-input/&quot;
+    }
+  },
+  &quot;recoveries&quot;: [],
+  &quot;warnings&quot;: [],
+  &quot;interventions&quot;: [],
+  &quot;steps&quot;: [],
+  &quot;started_at&quot;: &quot;2026-10-01T04:32:41.189649Z&quot;,
+  &quot;duration_ms&quot;: 45,
+  &quot;evidence_dir&quot;: &quot;runs/20261001T043240Z-replay-legacycore-member-get-savings-balance-ac-866e&quot;
+}</pre></details></main></body></html>

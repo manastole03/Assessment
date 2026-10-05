@@ -1,0 +1,71 @@
+# `make hooks` installs these. Lint and type tools run from the project's own environments (uv, npm),
+# so pre-commit and CI always agree on versions.
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: check-merge-conflict
+      - id: check-yaml
+      - id: check-toml
+      - id: end-of-file-fixer
+        exclude: ^(evidence/|backend/prisma/migrations/)
+      - id: trailing-whitespace
+        exclude: ^(evidence/|backend/prisma/migrations/)
+      - id: check-added-large-files
+        args: [--maxkb=1500]
+      - id: detect-private-key
+      - id: no-commit-to-branch
+        args: [--branch, main]
+        stages: [pre-push]
+
+  - repo: local
+    hooks:
+      - id: ruff
+        name: ruff check
+        entry: uv run ruff check --fix
+        language: system
+        types: [python]
+      - id: ruff-format
+        name: ruff format
+        entry: uv run ruff format
+        language: system
+        types: [python]
+      - id: mypy
+        name: mypy
+        entry: uv run mypy src
+        language: system
+        types: [python]
+        pass_filenames: false
+      - id: rote-validate
+        name: rote validate (schema, policy, PII lint)
+        entry: uv run rote validate
+        language: system
+        files: ^(capabilities|config)/
+        pass_filenames: false
+      - id: eslint
+        name: eslint
+        entry: bash -c 'cd ui && npx eslint --max-warnings=0 "${@/#ui\//}"' --
+        language: system
+        files: ^ui/.*\.(ts|tsx)$
+      - id: prettier
+        name: prettier
+        entry: bash -c 'cd ui && npx prettier --write "${@/#ui\//}"' --
+        language: system
+        files: ^ui/src/
+        types_or: [ts, tsx, css]
+      - id: backend-eslint
+        name: eslint (backend)
+        entry: bash -c 'cd backend && npx eslint --max-warnings=0 "${@/#backend\//}"' --
+        language: system
+        files: ^backend/(src|test|prisma)/.*\.ts$
+      - id: backend-prettier
+        name: prettier (backend)
+        entry: bash -c 'cd backend && npx prettier --write "${@/#backend\//}"' --
+        language: system
+        files: ^backend/(src|test|prisma)/.*\.ts$
+      - id: backend-typecheck
+        name: tsc (backend)
+        entry: bash -c 'cd backend && npx tsc -p tsconfig.json --noEmit'
+        language: system
+        files: ^backend/.*\.ts$
+        pass_filenames: false

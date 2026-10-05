@@ -1,0 +1,86 @@
+{
+  "run_id": "20261001T043238Z-replay-legacycore-member-get-savings-balance-ac-3ff4",
+  "capability": {
+    "id": "legacycore.member.get_savings_balance",
+    "version": "1.0.3",
+    "effective_hash": "sha256:1608fb7ffdcf839e",
+    "layers": [
+      "capability legacycore.member.get_savings_balance@1.0.3 (5ba5110e28a7)",
+      "app legacycore (daa7527aa8f0)"
+    ]
+  },
+  "tenant": "acme",
+  "status": "business_outcome",
+  "outputs": null,
+  "outcome": {
+    "code": "MEMBER_NOT_FOUND",
+    "message": "No member has that member number.",
+    "step_id": "s05_click_link_member_id",
+    "handler": "member_not_found"
+  },
+  "failure": null,
+  "recoveries": [],
+  "warnings": [],
+  "interventions": [],
+  "steps": [
+    {
+      "capability": "legacycore.session.sign_on@1.0.0",
+      "step_id": "s01_open_signon_asp",
+      "status": "ok",
+      "duration_ms": 62,
+      "locator": null
+    },
+    {
+      "capability": "legacycore.session.sign_on@1.0.0",
+      "step_id": "s02_fill_user_id_textbox",
+      "status": "ok",
+      "duration_ms": 70,
+      "locator": "attribute"
+    },
+    {
+      "capability": "legacycore.session.sign_on@1.0.0",
+      "step_id": "s03_fill_password_textbox",
+      "status": "ok",
+      "duration_ms": 76,
+      "locator": "attribute"
+    },
+    {
+      "capability": "legacycore.session.sign_on@1.0.0",
+      "step_id": "s04_click_button_sign_on",
+      "status": "ok",
+      "duration_ms": 102,
+      "locator": "attribute"
+    },
+    {
+      "capability": "legacycore.member.get_savings_balance@1.0.3",
+      "step_id": "s01_open_default_asp",
+      "status": "ok",
+      "duration_ms": 59,
+      "locator": null
+    },
+    {
+      "capability": "legacycore.member.get_savings_balance@1.0.3",
+      "step_id": "s02_click_link_member_inquiry",
+      "status": "ok",
+      "duration_ms": 94,
+      "locator": "attribute"
+    },
+    {
+      "capability": "legacycore.member.get_savings_balance@1.0.3",
+      "step_id": "s03_fill_member_number_textbox",
+      "status": "ok",
+      "duration_ms": 66,
+      "locator": "attribute"
+    },
+    {
+      "capability": "legacycore.member.get_savings_balance@1.0.3",
+      "step_id": "s04_click_button_search",
+      "status": "ok",
+      "duration_ms": 94,
+      "locator": "attribute"
+    }
+  ],
+  "started_at": "2026-10-01T04:32:38.810975Z",
+  "duration_ms": 896,
+  "evidence_dir": "runs/20261001T043238Z-replay-legacycore-member-get-savings-balance-ac-3ff4"
+}

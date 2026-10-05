@@ -1,0 +1,26 @@
+# Same vendor product (LegacyCore), configured differently: relabelled fields, renamed share products,
+# a newer version, and the vendor's daily security notice switched on.
+#
+# The security notice needs no override — the app profile already knows that vendor screen.
+# Overrides below are the reviewed, minimal deltas needed on top of the shared capability.
+schema: rote.tenant/v1
+id: bayview
+name: Bayview Community Credit Union
+apps:
+  legacycore:
+    base_url: http://127.0.0.1:8600/bayview
+    product_version: 4.3.0
+    secrets:
+      username: env:BAYVIEW_LEGACYCORE_USERNAME
+      password: env:BAYVIEW_LEGACYCORE_PASSWORD
+    overrides:
+    - capability: legacycore.member.get_savings_balance
+      versions: '>=1.0.0,<2.0.0'
+      reason: Bayview names the savings product REGULAR SAVINGS and its balance column
+        Ledger Balance
+      steps:
+        s06_read_savings_balance:
+          prepend_locators:
+          - by: table_cell
+            row: REGULAR SAVINGS
+            column: Ledger Balance

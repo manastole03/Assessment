@@ -1,0 +1,22 @@
+{
+  "run_id": "20261001T043137Z-discovery-legacycore-member-get-savings-balance-a71e",
+  "status": "succeeded",
+  "goal": "Look up member {{inputs.member_id}} and read their current share savings balance and the member's name",
+  "capability": "legacycore.member.get_savings_balance@1.0.0",
+  "artifact_path": "capabilities/legacycore/legacycore.member.get_savings_balance@1.0.0.yaml",
+  "outcome": null,
+  "failure": null,
+  "turns": 8,
+  "actions": 4,
+  "interventions": [],
+  "usage": {
+    "input_tokens": 0,
+    "output_tokens": 0,
+    "cache_read_input_tokens": 0,
+    "cache_creation_input_tokens": 0
+  },
+  "estimated_cost_usd": 0.0,
+  "model": "scripted",
+  "duration_ms": 9253,
+  "evidence_dir": "runs/20261001T043137Z-discovery-legacycore-member-get-savings-balance-a71e"
+}

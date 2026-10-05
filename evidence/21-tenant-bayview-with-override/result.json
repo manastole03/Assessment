@@ -1,0 +1,135 @@
+{
+  "run_id": "20261001T043340Z-replay-legacycore-member-get-savings-balance-ba-312d",
+  "capability": {
+    "id": "legacycore.member.get_savings_balance",
+    "version": "1.0.3",
+    "effective_hash": "sha256:0f4a6f8f95ec8564",
+    "layers": [
+      "capability legacycore.member.get_savings_balance@1.0.3 (5ba5110e28a7)",
+      "app legacycore (daa7527aa8f0)",
+      "tenant bayview override: Bayview names the savings product REGULAR SAVINGS and its balance column Ledger Balance"
+    ]
+  },
+  "tenant": "bayview",
+  "status": "succeeded",
+  "outputs": {
+    "savings_balance": "15002.50",
+    "member_name": "{{outputs.member_name}}"
+  },
+  "outcome": null,
+  "failure": null,
+  "recoveries": [
+    {
+      "handler": "daily_security_notice",
+      "source": "app",
+      "step_id": "s04_click_button_sign_on",
+      "action": "clicked Continue button on the security notice",
+      "attempt": 1
+    }
+  ],
+  "warnings": [
+    {
+      "code": "LOCATOR_DRIFT",
+      "step_id": "s02_click_link_member_inquiry",
+      "message": "role locator no longer matches (missing, 0 hit(s))"
+    },
+    {
+      "code": "LOCATOR_DRIFT",
+      "step_id": "s03_fill_member_number_textbox",
+      "message": "label locator no longer matches (missing, 0 hit(s))"
+    },
+    {
+      "code": "LOCATOR_DRIFT",
+      "step_id": "s04_click_button_search",
+      "message": "role locator no longer matches (missing, 0 hit(s))"
+    },
+    {
+      "code": "LOCATOR_DRIFT",
+      "step_id": "s06_read_savings_balance",
+      "message": "table_cell locator no longer matches (missing, 0 hit(s))"
+    }
+  ],
+  "interventions": [],
+  "steps": [
+    {
+      "capability": "legacycore.session.sign_on@1.0.0",
+      "step_id": "s01_open_signon_asp",
+      "status": "ok",
+      "duration_ms": 62,
+      "locator": null
+    },
+    {
+      "capability": "legacycore.session.sign_on@1.0.0",
+      "step_id": "s02_fill_user_id_textbox",
+      "status": "ok",
+      "duration_ms": 70,
+      "locator": "attribute"
+    },
+    {
+      "capability": "legacycore.session.sign_on@1.0.0",
+      "step_id": "s03_fill_password_textbox",
+      "status": "ok",
+      "duration_ms": 77,
+      "locator": "attribute"
+    },
+    {
+      "capability": "legacycore.session.sign_on@1.0.0",
+      "step_id": "s04_click_button_sign_on",
+      "status": "ok",
+      "duration_ms": 474,
+      "locator": "attribute"
+    },
+    {
+      "capability": "legacycore.member.get_savings_balance@1.0.3",
+      "step_id": "s01_open_default_asp",
+      "status": "ok",
+      "duration_ms": 61,
+      "locator": null
+    },
+    {
+      "capability": "legacycore.member.get_savings_balance@1.0.3",
+      "step_id": "s02_click_link_member_inquiry",
+      "status": "ok",
+      "duration_ms": 95,
+      "locator": "attribute"
+    },
+    {
+      "capability": "legacycore.member.get_savings_balance@1.0.3",
+      "step_id": "s03_fill_member_number_textbox",
+      "status": "ok",
+      "duration_ms": 67,
+      "locator": "attribute"
+    },
+    {
+      "capability": "legacycore.member.get_savings_balance@1.0.3",
+      "step_id": "s04_click_button_search",
+      "status": "ok",
+      "duration_ms": 95,
+      "locator": "attribute"
+    },
+    {
+      "capability": "legacycore.member.get_savings_balance@1.0.3",
+      "step_id": "s05_click_link_member_id",
+      "status": "ok",
+      "duration_ms": 94,
+      "locator": "role"
+    },
+    {
+      "capability": "legacycore.member.get_savings_balance@1.0.3",
+      "step_id": "s06_read_savings_balance",
+      "status": "ok",
+      "duration_ms": 7,
+      "locator": "table_cell"
+    },
+    {
+      "capability": "legacycore.member.get_savings_balance@1.0.3",
+      "step_id": "s07_read_member_name",
+      "status": "ok",
+      "duration_ms": 3,
+      "locator": "label"
+    }
+  ],
+  "started_at": "2026-10-01T04:33:40.401054Z",
+  "duration_ms": 1487,
+  "evidence_dir": "runs/20261001T043340Z-replay-legacycore-member-get-savings-balance-ba-312d"
+}

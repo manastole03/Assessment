@@ -1,0 +1,114 @@
+{
+  "run_id": "20261001T043301Z-replay-legacycore-member-get-savings-balance-ac-2bab",
+  "capability": {
+    "id": "legacycore.member.get_savings_balance",
+    "version": "1.0.3",
+    "effective_hash": "sha256:1608fb7ffdcf839e",
+    "layers": [
+      "capability legacycore.member.get_savings_balance@1.0.3 (5ba5110e28a7)",
+      "app legacycore (daa7527aa8f0)"
+    ]
+  },
+  "tenant": "acme",
+  "status": "succeeded",
+  "outputs": {
+    "savings_balance": "2418.07",
+    "member_name": "{{outputs.member_name}}"
+  },
+  "outcome": null,
+  "failure": null,
+  "recoveries": [],
+  "warnings": [],
+  "interventions": [
+    "iv_f3c3cde4"
+  ],
+  "steps": [
+    {
+      "capability": "legacycore.session.sign_on@1.0.0",
+      "step_id": "s01_open_signon_asp",
+      "status": "ok",
+      "duration_ms": 63,
+      "locator": null
+    },
+    {
+      "capability": "legacycore.session.sign_on@1.0.0",
+      "step_id": "s02_fill_user_id_textbox",
+      "status": "ok",
+      "duration_ms": 73,
+      "locator": "attribute"
+    },
+    {
+      "capability": "legacycore.session.sign_on@1.0.0",
+      "step_id": "s03_fill_password_textbox",
+      "status": "ok",
+      "duration_ms": 89,
+      "locator": "attribute"
+    },
+    {
+      "capability": "legacycore.session.sign_on@1.0.0",
+      "step_id": "s04_click_button_sign_on",
+      "status": "ok",
+      "duration_ms": 102,
+      "locator": "attribute"
+    },
+    {
+      "capability": "legacycore.member.get_savings_balance@1.0.3",
+      "step_id": "s01_open_default_asp",
+      "status": "ok",
+      "duration_ms": 60,
+      "locator": null
+    },
+    {
+      "capability": "legacycore.member.get_savings_balance@1.0.3",
+      "step_id": "s02_click_link_member_inquiry",
+      "status": "failed",
+      "duration_ms": 0,
+      "locator": null
+    },
+    {
+      "capability": "legacycore.member.get_savings_balance@1.0.3",
+      "step_id": "s02_click_link_member_inquiry",
+      "status": "human_completed",
+      "duration_ms": 0,
+      "locator": null
+    },
+    {
+      "capability": "legacycore.member.get_savings_balance@1.0.3",
+      "step_id": "s03_fill_member_number_textbox",
+      "status": "ok",
+      "duration_ms": 78,
+      "locator": "attribute"
+    },
+    {
+      "capability": "legacycore.member.get_savings_balance@1.0.3",
+      "step_id": "s04_click_button_search",
+      "status": "ok",
+      "duration_ms": 93,
+      "locator": "attribute"
+    },
+    {
+      "capability": "legacycore.member.get_savings_balance@1.0.3",
+      "step_id": "s05_click_link_member_id",
+      "status": "ok",
+      "duration_ms": 92,
+      "locator": "role"
+    },
+    {
+      "capability": "legacycore.member.get_savings_balance@1.0.3",
+      "step_id": "s06_read_savings_balance",
+      "status": "ok",
+      "duration_ms": 6,
+      "locator": "table_cell"
+    },
+    {
+      "capability": "legacycore.member.get_savings_balance@1.0.3",
+      "step_id": "s07_read_member_name",
+      "status": "ok",
+      "duration_ms": 5,
+      "locator": "label"
+    }
+  ],
+  "started_at": "2026-10-01T04:33:01.520612Z",
+  "duration_ms": 21417,
+  "evidence_dir": "runs/20261001T043301Z-replay-legacycore-member-get-savings-balance-ac-2bab"
+}

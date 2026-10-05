@@ -1,0 +1,281 @@
+// rote control plane: identity, access, and the system of record for runs, handoffs and approvals.
+//
+// The engine (Python) stays the source of truth for capability artifacts (YAML in git) and run
+// evidence (files). This database records *who* did *what* and indexes runs so they can be paged,
+// filtered and audited. Connection settings live in prisma.config.ts; the client uses the pg driver
+// adapter (src/database/prisma.service.ts).
+
+generator client {
+  provider               = "prisma-client"
+  output                 = "../src/generated/prisma"
+  moduleFormat           = "esm"
+  importFileExtension    = "js"
+  generatedFileExtension = "ts"
+  runtime                = "nodejs"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ============================================================================ identity & access
+
+/// Ranked: VIEWER < OPERATOR < REVIEWER < ADMIN. A route names the lowest role it accepts.
+enum Role {
+  VIEWER
+  OPERATOR
+  REVIEWER
+  ADMIN
+}
+
+enum UserStatus {
+  ACTIVE
+  DISABLED
+}
+
+model User {
+  id                  String     @id @default(uuid(7)) @db.Uuid
+  /// Stored lower-cased and trimmed; unique.
+  email               String     @unique @db.VarChar(254)
+  name                String     @db.VarChar(120)
+  /// argon2id (PHC string). Never leaves the repository layer.
+  passwordHash        String     @map("password_hash")
+  role                Role       @default(VIEWER)
+  status              UserStatus @default(ACTIVE)
+  failedLoginAttempts Int        @default(0) @map("failed_login_attempts")
+  lockedUntil         DateTime?  @map("locked_until") @db.Timestamptz(3)
+  lastLoginAt         DateTime?  @map("last_login_at") @db.Timestamptz(3)
+  createdAt           DateTime   @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt           DateTime   @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  sessions      Session[]
+  apiKeys       ApiKey[]
+  runs          Run[]
+  approvals     CapabilityApproval[]
+  interventions Intervention[]
+  auditLogs     AuditLog[]
+
+  @@index([role])
+  @@index([status])
+  @@index([createdAt])
+  @@map("users")
+}
+
+/// One sign-in on one device: a rotating refresh-token family.
+/// Access tokens carry the session id, so revoking the session ends them immediately.
+model Session {
+  id                String    @id @default(uuid(7)) @db.Uuid
+  userId            String    @map("user_id") @db.Uuid
+  /// SHA-256 of the current refresh token (the token itself is never stored).
+  refreshTokenHash  String    @unique @map("refresh_token_hash") @db.Char(64)
+  /// The token it replaced: presenting it again means the family leaked, so the session is revoked.
+  previousTokenHash String?   @unique @map("previous_token_hash") @db.Char(64)
+  expiresAt         DateTime  @map("expires_at") @db.Timestamptz(3)
+  revokedAt         DateTime? @map("revoked_at") @db.Timestamptz(3)
+  revokedReason     String?   @map("revoked_reason") @db.VarChar(64)
+  userAgent         String?   @map("user_agent") @db.VarChar(512)
+  ipAddress         String?   @map("ip_address") @db.VarChar(64)
+  lastUsedAt        DateTime  @default(now()) @map("last_used_at") @db.Timestamptz(3)
+  createdAt         DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt         DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
+  @@map("sessions")
+}
+
+/// Long-lived credentials for agents and MCP clients. Acts as its owner, capped at `role`.
+model ApiKey {
+  id         String    @id @default(uuid(7)) @db.Uuid
+  userId     String    @map("user_id") @db.Uuid
+  name       String    @db.VarChar(100)
+  /// Public lookup part of the key (shown in listings), e.g. `rote_3f9a1c2b`.
+  prefix     String    @unique @db.VarChar(32)
+  /// SHA-256 of the full key.
+  keyHash    String    @map("key_hash") @db.Char(64)
+  role       Role
+  expiresAt  DateTime? @map("expires_at") @db.Timestamptz(3)
+  lastUsedAt DateTime? @map("last_used_at") @db.Timestamptz(3)
+  revokedAt  DateTime? @map("revoked_at") @db.Timestamptz(3)
+  createdAt  DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt  DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  user User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  runs Run[]
+
+  @@index([userId])
+  @@map("api_keys")
+}
+
+// ============================================================================ runs & handoffs
+
+enum RunKind {
+  REPLAY
+  DISCOVERY
+  PROBE
+}
+
+enum RunStatus {
+  RUNNING
+  SUCCEEDED
+  BUSINESS_OUTCOME
+  FAILED
+  ERROR
+  INTERRUPTED
+}
+
+/// Where the control plane learned about a run.
+enum RunOrigin {
+  /// Started through this API, so `requestedBy` is known.
+  CONTROL_PLANE
+  /// Found on the engine (CLI, stdio MCP) by the run sync.
+  ENGINE
+  /// Checked-in evidence under evidence/.
+  EVIDENCE
+}
+
+/// The index of every run the engine knows about. Evidence (timeline, screenshots, result.json) stays
+/// on the engine and is read through it; this row is what lists, filters and attribution use.
+model Run {
+  /// The engine's run id (e.g. `20261002T060059Z-replay-...`): a natural key shared with the evidence.
+  id                    String     @id @db.VarChar(200)
+  kind                  RunKind
+  status                RunStatus
+  origin                RunOrigin
+  /// Redacted subject: capability ref, or the discovery label. Never the raw goal or inputs.
+  subject               String     @db.VarChar(300)
+  tenant                String?    @db.VarChar(64)
+  capabilityRef         String?    @map("capability_ref") @db.VarChar(200)
+  escalation            String?    @db.VarChar(16)
+  /// Business-outcome or failure code, once finished.
+  resultCode            String?    @map("result_code") @db.VarChar(64)
+  requestedById         String?    @map("requested_by_id") @db.Uuid
+  apiKeyId              String?    @map("api_key_id") @db.Uuid
+  startedAt             DateTime?  @map("started_at") @db.Timestamptz(3)
+  finishedAt            DateTime?  @map("finished_at") @db.Timestamptz(3)
+  durationMs            Int?       @map("duration_ms")
+  /// Set once the finished run's interventions have been copied in.
+  interventionsSyncedAt DateTime?  @map("interventions_synced_at") @db.Timestamptz(3)
+  createdAt             DateTime   @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt             DateTime   @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  requestedBy   User?          @relation(fields: [requestedById], references: [id], onDelete: SetNull)
+  apiKey        ApiKey?        @relation(fields: [apiKeyId], references: [id], onDelete: SetNull)
+  interventions Intervention[]
+
+  @@index([startedAt(sort: Desc)])
+  @@index([status, startedAt(sort: Desc)])
+  @@index([kind])
+  @@index([tenant])
+  @@index([origin])
+  @@index([requestedById])
+  @@map("runs")
+}
+
+enum InterventionStatus {
+  OPEN
+  CLAIMED
+  RESOLVED
+  EXPIRED
+}
+
+/// A human handoff on a run: the queue operators work from, and its audit.
+model Intervention {
+  id              String             @id @default(uuid(7)) @db.Uuid
+  runId           String             @map("run_id") @db.VarChar(200)
+  /// The engine's id for it within the run (e.g. `iv_c294640d`).
+  engineId        String             @map("engine_id") @db.VarChar(64)
+  reasonCode      String             @map("reason_code") @db.VarChar(64)
+  status          InterventionStatus
+  stepId          String?            @map("step_id") @db.VarChar(100)
+  /// The operator handle the engine's lease names (the user's email for control-plane claims).
+  claimedBy       String?            @map("claimed_by") @db.VarChar(254)
+  claimedById     String?            @map("claimed_by_id") @db.Uuid
+  resolution      String?            @db.VarChar(32)
+  note            String?            @db.VarChar(2000)
+  claimedAt       DateTime?          @map("claimed_at") @db.Timestamptz(3)
+  resolvedAt      DateTime?          @map("resolved_at") @db.Timestamptz(3)
+  createdAt       DateTime           @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt       DateTime           @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  run           Run   @relation(fields: [runId], references: [id], onDelete: Cascade)
+  claimedByUser User? @relation(fields: [claimedById], references: [id], onDelete: SetNull)
+
+  @@unique([runId, engineId])
+  @@index([status, createdAt(sort: Desc)])
+  @@index([claimedById])
+  @@map("interventions")
+}
+
+// ============================================================================ governance
+
+/// Who approved which capability version. The artifact's own provenance records the reviewer too;
+/// this is the queryable, identity-backed record (and what the four-eyes rule checks).
+model CapabilityApproval {
+  id            String   @id @default(uuid(7)) @db.Uuid
+  capabilityId  String   @map("capability_id") @db.VarChar(200)
+  version       String   @db.VarChar(32)
+  approvedById  String?  @map("approved_by_id") @db.Uuid
+  /// Snapshot of the reviewer, kept if the user is later deleted.
+  reviewerEmail String   @map("reviewer_email") @db.VarChar(254)
+  reviewerName  String   @map("reviewer_name") @db.VarChar(120)
+  notes         String?  @db.VarChar(2000)
+  createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  approvedBy User? @relation(fields: [approvedById], references: [id], onDelete: SetNull)
+
+  @@unique([capabilityId, version])
+  @@index([approvedById])
+  @@map("capability_approvals")
+}
+
+enum ActorType {
+  USER
+  API_KEY
+  SYSTEM
+}
+
+enum AuditOutcome {
+  SUCCESS
+  FAILURE
+}
+
+/// Append-only record of security-relevant actions. Never holds secrets, tokens or input values.
+model AuditLog {
+  id           String       @id @default(uuid(7)) @db.Uuid
+  actorType    ActorType    @map("actor_type")
+  actorId      String?      @map("actor_id") @db.Uuid
+  /// Snapshot of the actor's email, kept if the user is later deleted.
+  actorEmail   String?      @map("actor_email") @db.VarChar(254)
+  apiKeyId     String?      @map("api_key_id") @db.Uuid
+  action       String       @db.VarChar(64)
+  resourceType String?      @map("resource_type") @db.VarChar(64)
+  resourceId   String?      @map("resource_id") @db.VarChar(200)
+  outcome      AuditOutcome
+  metadata     Json?
+  ipAddress    String?      @map("ip_address") @db.VarChar(64)
+  requestId    String?      @map("request_id") @db.VarChar(128)
+  createdAt    DateTime     @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  actor User? @relation(fields: [actorId], references: [id], onDelete: SetNull)
+
+  @@index([createdAt(sort: Desc)])
+  @@index([actorId, createdAt(sort: Desc)])
+  @@index([action, createdAt(sort: Desc)])
+  @@index([resourceType, resourceId])
+  @@map("audit_logs")
+}
+
+// ============================================================================ coordination
+
+/// A leader lease for background jobs, so only one API replica runs a given job at a time.
+model JobLease {
+  name      String   @id @db.VarChar(64)
+  holder    String   @db.VarChar(128)
+  expiresAt DateTime @map("expires_at") @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  @@map("job_leases")
+}

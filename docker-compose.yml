@@ -1,0 +1,122 @@
+# The whole stack for local development and demos:  docker compose up --build
+#
+#   browser ──▶ backend (NestJS, :3000) ──▶ postgres
+#                  │  /api/v1 · /health · UI
+#                  ▼
+#               engine (Python, internal :8700) ──▶ bank (LegacyCore mock, shares the engine's network)
+#
+# Secrets come from ./.env (see .env.example); compose refuses to start without them.
+# Host ports are configurable so the stack can sit beside other projects.
+name: rote
+
+x-engine-image: &engine-image
+  image: rote-engine:local
+
+services:
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-rote}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+      POSTGRES_DB: ${POSTGRES_DB:-rote}
+    ports:
+      - "127.0.0.1:${POSTGRES_HOST_PORT:-5433}:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    restart: unless-stopped
+
+  # One-shot release job: apply migrations, then seed the admin (idempotent). The API never migrates itself.
+  migrate:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+      target: build
+    command: ["sh", "-c", "npx prisma migrate deploy && npx prisma db seed"]
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-rote}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-rote}?schema=public
+      SEED_ADMIN_EMAIL: ${SEED_ADMIN_EMAIL:-admin@rote.local}
+      SEED_ADMIN_NAME: ${SEED_ADMIN_NAME:-Rote Admin}
+      SEED_ADMIN_PASSWORD: ${SEED_ADMIN_PASSWORD:?set SEED_ADMIN_PASSWORD in .env}
+      SEED_DEMO_USERS: ${SEED_DEMO_USERS:-true}
+      SEED_DEMO_PASSWORD: ${SEED_DEMO_PASSWORD:-}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: "no"
+
+  engine:
+    <<: *engine-image
+    build:
+      context: .
+      dockerfile: docker/engine.Dockerfile
+    command: ["rote", "engine", "--host", "0.0.0.0", "--port", "8700"]
+    environment:
+      ROTE_ENGINE_TOKEN: ${ENGINE_TOKEN:?set ENGINE_TOKEN in .env}
+      ROTE_PUBLIC_URL: ${PUBLIC_URL:-http://localhost:3000}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      ACME_LEGACYCORE_USERNAME: ${ACME_LEGACYCORE_USERNAME:-}
+      ACME_LEGACYCORE_PASSWORD: ${ACME_LEGACYCORE_PASSWORD:-}
+      BAYVIEW_LEGACYCORE_USERNAME: ${BAYVIEW_LEGACYCORE_USERNAME:-}
+      BAYVIEW_LEGACYCORE_PASSWORD: ${BAYVIEW_LEGACYCORE_PASSWORD:-}
+    volumes:
+      - engine-runs:/app/runs
+      - engine-library:/app/capabilities
+    expose:
+      - "8700"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8700/api/health', timeout=2)"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+    restart: unless-stopped
+
+  # The bundled LegacyCore mock. It joins the engine's network namespace, so the tenant files'
+  # http://127.0.0.1:8600 base URLs work unchanged. A real deployment points tenants at the real app.
+  bank:
+    <<: *engine-image
+    command: ["mockbank", "serve"]
+    network_mode: "service:engine"
+    depends_on:
+      - engine
+    restart: unless-stopped
+
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+      target: runtime
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      PUBLIC_URL: ${PUBLIC_URL:-http://localhost:3000}
+      CORS_ORIGIN: ${CORS_ORIGIN:-}
+      DATABASE_URL: postgresql://${POSTGRES_USER:-rote}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-rote}?schema=public
+      JWT_SECRET: ${JWT_SECRET:?set JWT_SECRET in .env}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-15m}
+      # Plain http on localhost; set true (the production default) behind TLS.
+      COOKIE_SECURE: ${COOKIE_SECURE:-false}
+      ENGINE_URL: http://engine:8700
+      ENGINE_TOKEN: ${ENGINE_TOKEN}
+      DEMO_ENABLED: ${DEMO_ENABLED:-true}
+      AUTH_ALLOW_SIGNUP: ${AUTH_ALLOW_SIGNUP:-false}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+    ports:
+      - "${ROTE_HTTP_PORT:-3000}:3000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+      engine:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  pgdata:
+  engine-runs:
+  engine-library:

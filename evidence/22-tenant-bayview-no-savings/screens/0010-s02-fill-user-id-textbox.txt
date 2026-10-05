@@ -1,0 +1,12 @@
+URL: http://127.0.0.1:8600/bayview/signon.asp  (title: LegacyCore Member Services)
+Frames: top (signon.asp)
+Native dialog: none
+[frame top — signon.asp]
+  e1 cell 'BAYVIEW COMMUNITY CREDIT UNION'
+  e2 cell 'MEMBER SERVICES - AUTHORIZED PERSONNEL ONLY'
+  e3 cell 'User ID:'
+  e4 textbox label='User ID' name=USRID value='{{secrets.username}}'
+  e5 cell 'Password:'
+  e6 textbox label='Password' name=PSWD value=''
+  e7 button 'Sign On' name=BTNSO value='Sign On'
+  e8 text 'LegacyCore Member Services v4.3.0 © 1998-2019'

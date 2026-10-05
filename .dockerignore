@@ -1,0 +1,25 @@
+# Build context for backend/Dockerfile and docker/engine.Dockerfile (both build from the repo root).
+# Secrets and local state never enter an image.
+**/.env
+**/.env.*
+!**/.env.example
+
+.git
+**/node_modules
+**/dist
+**/coverage
+**/*.tsbuildinfo
+backend/src/generated
+
+.venv
+**/__pycache__
+**/*.pyc
+.pytest_cache
+.ruff_cache
+.mypy_cache
+.rote
+runs
+
+docs/images
+**/*.log
+**/.DS_Store

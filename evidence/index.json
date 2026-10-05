@@ -1,0 +1,185 @@
+{
+  "mode": "offline",
+  "runs": [
+    {
+      "name": "01-discovery-sign-on",
+      "shows": "Scripted stand-in for discovery: \u201cSign on to LegacyCore with the operator's service account\u201d \u2192 legacycore.session.sign_on@1.0.0",
+      "result": "succeeded",
+      "capability": "legacycore.session.sign_on@1.0.0",
+      "model": "scripted",
+      "turns": 5,
+      "actions": 3,
+      "estimated_cost_usd": 0.0,
+      "tokens": {
+        "input_tokens": 0,
+        "output_tokens": 0,
+        "cache_read_input_tokens": 0,
+        "cache_creation_input_tokens": 0
+      }
+    },
+    {
+      "name": "02-discovery-savings-balance",
+      "shows": "Scripted stand-in for discovery: \u201cLook up member 12345 and read their current share savings balance and the member's name\u201d \u2192 legacycore.member.get_savings_balance@1.0.0",
+      "result": "succeeded",
+      "capability": "legacycore.member.get_savings_balance@1.0.0",
+      "model": "scripted",
+      "turns": 8,
+      "actions": 4,
+      "estimated_cost_usd": 0.0,
+      "tokens": {
+        "input_tokens": 0,
+        "output_tokens": 0,
+        "cache_read_input_tokens": 0,
+        "cache_creation_input_tokens": 0
+      }
+    },
+    {
+      "name": "03-probe-member-not-found",
+      "shows": "Unknown screen after search \u2192 model classifies it \u2192 MEMBER_NOT_FOUND handler",
+      "result": "replay TARGET_NOT_FOUND \u2192 handler member_not_found (business_outcome)",
+      "capability": "legacycore.member.get_savings_balance@1.0.1",
+      "classified_by": "offline rule (stand-in)"
+    },
+    {
+      "name": "04-probe-restricted-account",
+      "shows": "ACCESS DENIED screen \u2192 ACCESS_RESTRICTED handler",
+      "result": "replay TARGET_NOT_FOUND \u2192 handler access_restricted (business_outcome)",
+      "capability": "legacycore.member.get_savings_balance@1.0.2",
+      "classified_by": "offline rule (stand-in)"
+    },
+    {
+      "name": "05-probe-no-savings-share",
+      "shows": "Member without a savings share \u2192 NO_SAVINGS_ACCOUNT handler (guarded so it can never fire on the happy path)",
+      "result": "replay TARGET_NOT_FOUND \u2192 handler no_savings_account (business_outcome)",
+      "capability": "legacycore.member.get_savings_balance@1.0.3",
+      "classified_by": "offline rule (stand-in)"
+    },
+    {
+      "name": "10-replay-success",
+      "shows": "Deterministic replay, no model: outputs + verified checkpoint",
+      "result": "succeeded",
+      "capability": "legacycore.member.get_savings_balance@1.0.3",
+      "outputs": {
+        "savings_balance": "2418.07",
+        "member_name": "{{outputs.member_name}}"
+      }
+    },
+    {
+      "name": "11-replay-other-member",
+      "shows": "Same artifact, member whose share rows are re-ordered",
+      "result": "succeeded",
+      "capability": "legacycore.member.get_savings_balance@1.0.3",
+      "outputs": {
+        "savings_balance": "15002.50",
+        "member_name": "{{outputs.member_name}}"
+      }
+    },
+    {
+      "name": "12-replay-member-not-found",
+      "shows": "Business outcome, not a failure",
+      "result": "business_outcome",
+      "capability": "legacycore.member.get_savings_balance@1.0.3",
+      "outcome": "MEMBER_NOT_FOUND"
+    },
+    {
+      "name": "13-replay-restricted-account",
+      "shows": "Business outcome (permission denial in-flow)",
+      "result": "business_outcome",
+      "capability": "legacycore.member.get_savings_balance@1.0.3",
+      "outcome": "ACCESS_RESTRICTED"
+    },
+    {
+      "name": "14-replay-invalid-input",
+      "shows": "Caller error rejected before touching the UI",
+      "result": "failed",
+      "capability": "legacycore.member.get_savings_balance@1.0.3",
+      "failure": "INVALID_INPUT (before any UI step)"
+    },
+    {
+      "name": "15-replay-recoveries",
+      "shows": "Interstitial, native dialog, HTTP 503 and session expiry \u2014 all recognised and recovered",
+      "result": "succeeded",
+      "capability": "legacycore.member.get_savings_balance@1.0.3",
+      "outputs": {
+        "savings_balance": "2418.07",
+        "member_name": "{{outputs.member_name}}"
+      },
+      "recoveries": [
+        "service_unavailable: reloaded main after 1000 ms backoff",
+        "maintenance_notice: clicked Acknowledge button on the system notice",
+        "session_warning_dialog: accept dialog",
+        "session_expired: re-authenticate and restart capability"
+      ]
+    },
+    {
+      "name": "16-replay-hard-failure",
+      "shows": "Unannounced vendor redesign \u2192 TARGET_NOT_FOUND with screenshot + DOM + expected/observed",
+      "result": "failed",
+      "capability": "legacycore.member.get_savings_balance@1.0.3",
+      "failure": "TARGET_NOT_FOUND at s03_fill_member_number_textbox"
+    },
+    {
+      "name": "17-replay-human-handoff",
+      "shows": "Unknown attestation screen \u2192 operator takes the live session via the console \u2192 hands back \u2192 run completes",
+      "result": "succeeded",
+      "capability": "legacycore.member.get_savings_balance@1.0.3",
+      "outputs": {
+        "savings_balance": "2418.07",
+        "member_name": "{{outputs.member_name}}"
+      },
+      "interventions": [
+        "iv_f3c3cde4"
+      ],
+      "late_input_after_handback": 409
+    },
+    {
+      "name": "20-tenant-bayview-no-override",
+      "shows": "Shared artifact on a variant tenant: drift reported; the read it can't do safely fails loudly instead of guessing (or claiming 'no savings')",
+      "result": "failed",
+      "capability": "legacycore.member.get_savings_balance@1.0.3",
+      "failure": "TARGET_NOT_FOUND at s06_read_savings_balance",
+      "recoveries": [
+        "daily_security_notice: clicked Continue button on the security notice"
+      ],
+      "warnings": [
+        "LOCATOR_DRIFT (s02_click_link_member_inquiry)",
+        "LOCATOR_DRIFT (s03_fill_member_number_textbox)",
+        "LOCATOR_DRIFT (s04_click_button_search)"
+      ]
+    },
+    {
+      "name": "21-tenant-bayview-with-override",
+      "shows": "One reviewed override (step s06_read_savings_balance) \u2192 success",
+      "result": "succeeded",
+      "capability": "legacycore.member.get_savings_balance@1.0.3",
+      "outputs": {
+        "savings_balance": "15002.50",
+        "member_name": "{{outputs.member_name}}"
+      },
+      "recoveries": [
+        "daily_security_notice: clicked Continue button on the security notice"
+      ],
+      "warnings": [
+        "LOCATOR_DRIFT (s02_click_link_member_inquiry)",
+        "LOCATOR_DRIFT (s03_fill_member_number_textbox)",
+        "LOCATOR_DRIFT (s04_click_button_search)",
+        "LOCATOR_DRIFT (s06_read_savings_balance)"
+      ]
+    },
+    {
+      "name": "22-tenant-bayview-no-savings",
+      "shows": "The override propagates into the probed handler: a Bayview member without savings gets the right business outcome",
+      "result": "business_outcome",
+      "capability": "legacycore.member.get_savings_balance@1.0.3",
+      "outcome": "NO_SAVINGS_ACCOUNT",
+      "recoveries": [
+        "daily_security_notice: clicked Continue button on the security notice"
+      ],
+      "warnings": [
+        "LOCATOR_DRIFT (s02_click_link_member_inquiry)",
+        "LOCATOR_DRIFT (s03_fill_member_number_textbox)",
+        "LOCATOR_DRIFT (s04_click_button_search)"
+      ]
+    }
+  ]
+}

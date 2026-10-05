@@ -1,0 +1,28 @@
+{% extends "_page.html" %}
+{% block body %}
+<table width="100%" cellpadding="3" cellspacing="0"><tr><td class="bar">MEMBER INQUIRY</td></tr></table>
+<br>
+{% if broken %}
+<form name="frmFind" method="get" action="mbrlist.asp">
+<div style="padding:8px;border:1px solid #999;width:420px"><b>FIND A MEMBER</b><br><br>
+<label>Member ID <input type="text" name="MEMBER_ID" size="12"></label>
+<button type="button" name="BTN_LOOKUP" onclick="location.href='mbrlist.asp?MBRNO='+document.forms[0].MEMBER_ID.value">Lookup</button>
+</div></form>
+{% else %}
+<form name="frmInq" method="get" action="mbrlist.asp">
+<table border="0" cellpadding="3" cellspacing="0">
+<tr><td>{{ t.labels.member_number }}:</td><td><input type="text" name="MBRNO" size="12" maxlength="10"></td></tr>
+<tr><td>{{ t.labels.last_name }}:</td><td><input type="text" name="LNAME" size="20"></td></tr>
+<tr><td></td><td><input type="button" name="SRCH" value="{{ t.labels.search_button }}" onclick="doSearch()">
+<input type="reset" value="Clear"></td></tr>
+</table>
+</form>
+{% endif %}
+<script>
+function doSearch() {
+  var f = document.forms['frmInq'];
+  if (f.MBRNO.value == '' && f.LNAME.value == '') { alert('ENTER A MEMBER NUMBER OR LAST NAME'); return; }
+  f.submit();
+}
+</script>
+{% endblock %}

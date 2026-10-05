@@ -1,0 +1,8 @@
+body, td, th, input, select { font-family: Arial, Helvetica, sans-serif; font-size: 12px; }
+table.grid { border-collapse: collapse; }
+table.grid th { background: #c0c0c0; text-align: left; font-size: 11px; padding: 3px 6px; }
+table.grid td { background: #ffffff; padding: 3px 6px; }
+.err { color: #c00000; font-weight: bold; }
+.lbl { font-weight: bold; }
+.bar { background: #a0a090; font-weight: bold; padding: 3px; }
+a { color: #00309c; }

@@ -1,0 +1,271 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1"><title>Run report</title><style>
+:root{--bg:#fbfbf9;--fg:#1d1d1b;--muted:#6b6b66;--line:#e4e3dc;--card:#fff;--ok:#1f7a4d;--warn:#a86a00;
+--bad:#b3261e;--biz:#7a3fa0;--info:#1f5fa8}
+@media (prefers-color-scheme:dark){:root{--bg:#161614;--fg:#ecebe6;--muted:#9c9b94;--line:#2e2d29;--card:#1e1e1b}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font:14px/1.5 ui-sans-serif,system-ui,-apple-system,Segoe UI,sans-serif}
+main{max-width:1100px;margin:0 auto;padding:24px 16px 64px}h1{font-size:20px;margin:0 0 4px}h2{font-size:15px;margin:28px 0 8px}
+.meta{color:var(--muted);font-size:13px}.pill{display:inline-block;padding:1px 8px;border-radius:999px;font-size:12px;font-weight:600;color:#fff}
+.succeeded{background:var(--ok)}.failed{background:var(--bad)}.business_outcome{background:var(--biz)}.unknown{background:var(--muted)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px 16px;margin-top:14px}
+dl{display:grid;grid-template-columns:max-content 1fr;gap:6px 16px;margin:0}dt{color:var(--muted)}dd{margin:0;word-break:break-word}
+table{width:100%;border-collapse:collapse;background:var(--card);border:1px solid var(--line);border-radius:8px;overflow:hidden}
+td{padding:6px 10px;border-top:1px solid var(--line);vertical-align:top}td.t{color:var(--muted);white-space:nowrap;width:70px;font-variant-numeric:tabular-nums}
+td.k{white-space:nowrap;width:190px;font-family:ui-monospace,Menlo,monospace;font-size:12px}
+.k.step{color:var(--info)}.k.handler,.k.recovery{color:var(--warn)}.k.intervention,.k.human,.k.control{color:var(--biz)}.k.run,.k.discovery{font-weight:700}
+.k.policy,.k.failure{color:var(--bad)}.k.agent{color:var(--info)}.k.locator{color:var(--warn)}
+pre{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:12px;overflow:auto;font-size:12px;white-space:pre-wrap}
+img.shot{max-width:320px;border:1px solid var(--line);border-radius:4px;display:block;margin-top:6px;cursor:zoom-in}
+img.shot.big{max-width:100%}.detail{color:var(--muted);font-size:12px;word-break:break-word}.detail b{color:var(--fg)}
+ul{margin:4px 0;padding-left:18px}code{font-family:ui-monospace,Menlo,monospace;font-size:12px}
+</style></head>
+<body><main><h1>legacycore.member.get_savings_balance@1.0.3</h1>
+<div class="meta"><span class="pill succeeded">succeeded</span> · replay
+ · run <code>20261001T043301Z-replay-legacycore-member-get-savings-balance-ac-2bab</code> · 62 events</div>
+<div class="card"><dl><dt>capability</dt><dd><code>legacycore.member.get_savings_balance@1.0.3</code> · sha256:1608fb7ffdcf839e</dd><dt>layers</dt><dd><ul><li>capability legacycore.member.get_savings_balance@1.0.3 (5ba5110e28a7)</li><li>app legacycore (daa7527aa8f0)</li></ul></dd><dt>tenant</dt><dd>acme</dd><dt>outputs</dt><dd><code>savings_balance</code> = 2418.07<br><code>member_name</code> = {{outputs.member_name}}</dd><dt>interventions</dt><dd><ul><li>iv_f3c3cde4</li></ul></dd></dl></div>
+<h2>Timeline</h2><table><tr><td class="t">0.3s</td><td class="k console">console.started</td><td class="detail"><b>url</b>: http://127.0.0.1:8765</td></tr><tr><td class="t">0.3s</td><td class="k run">run.started</td><td class="detail"><b>kind</b>: replay · <b>run_id</b>: 20261001T043301Z-replay-legacycore-member-get-savings-balance-ac-2bab · <b>subject</b>: legacycore.member.get_savings_balance@1.0.3 · <b>tenant</b>: acme · <b>evidence_dir</b>: runs/20261001T043301Z-replay-legacycore-member-get-savings-balance-ac-2bab · <b>layers</b>: [&quot;capability legacycore.member.get_savings_balance@1.0.3 (5ba5110e28a7)&quot;, &quot;app legacycore (daa7527aa8f0)&quot;] · <b>effective_hash</b>: sha256:1608fb7ffdcf839e · <b>inputs</b>: [&quot;member_id&quot;]</td></tr><tr><td class="t">0.3s</td><td class="k session">session.establishing</td><td class="detail"><b>capability</b>: legacycore.session.sign_on@1.0.0</td></tr><tr><td class="t">0.3s</td><td class="k step">step.started</td><td class="detail"><b>step</b>: s01_open_signon_asp · <b>intent</b>: Open signon.asp</td></tr><tr><td class="t">0.3s</td><td class="k policy">policy.decision</td><td class="detail"><b>verdict</b>: allow · <b>risk</b>: read_only · <b>reason</b>: navigate does not change application state</td></tr><tr><td class="t">0.4s</td><td class="k step">step.completed</td><td class="detail"><b>step</b>: s01_open_signon_asp · <b>duration_ms</b>: 63 · <b>locator</b>: None</td></tr><tr><td class="t">0.4s</td><td class="k evidence">evidence.captured</td><td class="detail"><b>s01_open_signon_asp</b><img class="shot" loading="lazy" src="screens/0007-s01-open-signon-asp.jpg" onclick="this.classList.toggle('big')"></td></tr><tr><td class="t">0.4s</td><td class="k step">step.started</td><td class="detail"><b>step</b>: s02_fill_user_id_textbox · <b>intent</b>: Enter {{secrets.username}} in &#x27;User ID&#x27; textbox</td></tr><tr><td class="t">0.4s</td><td class="k policy">policy.decision</td><td class="detail"><b>verdict</b>: allow · <b>risk</b>: reversible · <b>reason</b>: edits unsaved form state</td></tr><tr><td class="t">0.5s</td><td class="k step">step.completed</td><td class="detail"><b>step</b>: s02_fill_user_id_textbox · <b>duration_ms</b>: 73 · <b>locator</b>: attribute</td></tr><tr><td class="t">0.5s</td><td class="k evidence">evidence.captured</td><td class="detail"><b>s02_fill_user_id_textbox</b><img class="shot" loading="lazy" src="screens/0011-s02-fill-user-id-textbox.jpg" onclick="this.classList.toggle('big')"></td></tr><tr><td class="t">0.5s</td><td class="k step">step.started</td><td class="detail"><b>step</b>: s03_fill_password_textbox · <b>intent</b>: Enter {{secrets.password}} in &#x27;Password&#x27; textbox</td></tr><tr><td class="t">0.5s</td><td class="k policy">policy.decision</td><td class="detail"><b>verdict</b>: allow · <b>risk</b>: reversible · <b>reason</b>: edits unsaved form state</td></tr><tr><td class="t">0.6s</td><td class="k step">step.completed</td><td class="detail"><b>step</b>: s03_fill_password_textbox · <b>duration_ms</b>: 89 · <b>locator</b>: attribute</td></tr><tr><td class="t">0.6s</td><td class="k evidence">evidence.captured</td><td class="detail"><b>s03_fill_password_textbox</b><img class="shot" loading="lazy" src="screens/0015-s03-fill-password-textbox.jpg" onclick="this.classList.toggle('big')"></td></tr><tr><td class="t">0.6s</td><td class="k step">step.started</td><td class="detail"><b>step</b>: s04_click_button_sign_on · <b>intent</b>: Click button &#x27;Sign On&#x27;</td></tr><tr><td class="t">0.6s</td><td class="k policy">policy.decision</td><td class="detail"><b>verdict</b>: allow · <b>risk</b>: reversible · <b>reason</b>: navigates or submits without a commit keyword</td></tr><tr><td class="t">0.7s</td><td class="k step">step.completed</td><td class="detail"><b>step</b>: s04_click_button_sign_on · <b>duration_ms</b>: 102 · <b>locator</b>: attribute</td></tr><tr><td class="t">0.7s</td><td class="k evidence">evidence.captured</td><td class="detail"><b>s04_click_button_sign_on</b><img class="shot" loading="lazy" src="screens/0019-s04-click-button-sign-on.jpg" onclick="this.classList.toggle('big')"></td></tr><tr><td class="t">0.7s</td><td class="k checkpoint">checkpoint.verified</td><td class="detail"><b>capability</b>: legacycore.session.sign_on@1.0.0 · <b>description</b>: &#x27;FUNCTIONS&#x27; is shown</td></tr><tr><td class="t">0.7s</td><td class="k app">app.version</td><td class="detail"><b>version</b>: 4.2.1 · <b>supported</b>: &gt;=4.2.0,&lt;5.0.0 · <b>compatible</b>: True</td></tr><tr><td class="t">0.7s</td><td class="k step">step.started</td><td class="detail"><b>step</b>: s01_open_default_asp · <b>intent</b>: Open default.asp</td></tr><tr><td class="t">0.7s</td><td class="k policy">policy.decision</td><td class="detail"><b>verdict</b>: allow · <b>risk</b>: read_only · <b>reason</b>: navigate does not change application state</td></tr><tr><td class="t">0.8s</td><td class="k step">step.completed</td><td class="detail"><b>step</b>: s01_open_default_asp · <b>duration_ms</b>: 60 · <b>locator</b>: None</td></tr><tr><td class="t">0.8s</td><td class="k evidence">evidence.captured</td><td class="detail"><b>s01_open_default_asp</b><img class="shot" loading="lazy" src="screens/0025-s01-open-default-asp.jpg" onclick="this.classList.toggle('big')"></td></tr><tr><td class="t">0.8s</td><td class="k step">step.started</td><td class="detail"><b>step</b>: s02_click_link_member_inquiry · <b>intent</b>: Click link &#x27;Member Inquiry&#x27; (menu frame)</td></tr><tr><td class="t">0.8s</td><td class="k policy">policy.decision</td><td class="detail"><b>verdict</b>: allow · <b>risk</b>: reversible · <b>reason</b>: navigates or submits without a commit keyword</td></tr><tr><td class="t">16.0s</td><td class="k evidence">evidence.captured</td><td class="detail"><b>escalation-s02_click_link_member_inquiry</b><img class="shot" loading="lazy" src="screens/0028-escalation-s02-click-link-member-inquiry.jpg" onclick="this.classList.toggle('big')"></td></tr><tr><td class="t">16.0s</td><td class="k control">control.changed</td><td class="detail"><b>lease</b>: automated → awaiting_human (pending-operator) · <b>reason</b>: UNEXPECTED_STATE: after &#x27;Click link &#x27;Member Inquiry&#x27; (menu frame)&#x27; the screen did not reach the expected state, and no known handler recognised what it shows instead. Expected: main frame at mbrinq.asp; text &#x27;MEMBER INQUIRY&#x27; visible in main</td></tr><tr><td class="t">16.0s</td><td class="k intervention">intervention.raised</td><td class="detail"><b>id</b>: iv_f3c3cde4 · <b>reason_code</b>: UNEXPECTED_STATE · <b>reason</b>: after &#x27;Click link &#x27;Member Inquiry&#x27; (menu frame)&#x27; the screen did not reach the expected state, and no known handler recognised what it shows instead. Expected: main frame at mbrinq.asp; text &#x27;MEMBER INQUIRY&#x27; visible in main</td></tr><tr><td class="t">17.6s</td><td class="k control">control.changed</td><td class="detail"><b>lease</b>: awaiting_human → human (dana.ops) · <b>reason</b>: operator claimed control</td></tr><tr><td class="t">17.6s</td><td class="k intervention">intervention.claimed</td><td class="detail"><b>operator</b>: dana.ops · <b>epoch</b>: 2</td></tr><tr><td class="t">18.5s</td><td class="k human">human.action</td><td class="detail"><b>description</b>: clicked checkbox (label &#x27;I confirm I have completed the annual BSA/AML training&#x27;)</td></tr><tr><td class="t">18.5s</td><td class="k human">human.action</td><td class="detail"><b>description</b>: set checkbox (label &#x27;I confirm I have completed the annual BSA/AML training&#x27;) to &#x27;checked&#x27;</td></tr><tr><td class="t">19.5s</td><td class="k human">human.action</td><td class="detail"><b>description</b>: clicked button &#x27;Continue&#x27;</td></tr><tr><td class="t">21.2s</td><td class="k control">control.changed</td><td class="detail"><b>lease</b>: human → automated (automation) · <b>reason</b>: operator resolved: step_completed</td></tr><tr><td class="t">21.2s</td><td class="k intervention">intervention.resolved</td><td class="detail"><b>resolution</b>: step_completed · <b>note</b>: Completed the annual BSA/AML attestation for the service account; Member Inquiry is open. · <b>human_actions</b>: 3</td></tr><tr><td class="t">21.2s</td><td class="k step">step.started</td><td class="detail"><b>step</b>: s03_fill_member_number_textbox · <b>intent</b>: Enter {{inputs.member_id}} in &#x27;Member Number&#x27; textbox (main frame)</td></tr><tr><td class="t">21.2s</td><td class="k policy">policy.decision</td><td class="detail"><b>verdict</b>: allow · <b>risk</b>: reversible · <b>reason</b>: edits unsaved form state</td></tr><tr><td class="t">21.3s</td><td class="k step">step.completed</td><td class="detail"><b>step</b>: s03_fill_member_number_textbox · <b>duration_ms</b>: 78 · <b>locator</b>: attribute</td></tr><tr><td class="t">21.3s</td><td class="k evidence">evidence.captured</td><td class="detail"><b>s03_fill_member_number_textbox</b><img class="shot" loading="lazy" src="screens/0041-s03-fill-member-number-textbox.jpg" onclick="this.classList.toggle('big')"></td></tr><tr><td class="t">21.3s</td><td class="k step">step.started</td><td class="detail"><b>step</b>: s04_click_button_search · <b>intent</b>: Click button &#x27;Search&#x27; (main frame)</td></tr><tr><td class="t">21.3s</td><td class="k policy">policy.decision</td><td class="detail"><b>verdict</b>: allow · <b>risk</b>: reversible · <b>reason</b>: navigates or submits without a commit keyword</td></tr><tr><td class="t">21.4s</td><td class="k step">step.completed</td><td class="detail"><b>step</b>: s04_click_button_search · <b>duration_ms</b>: 93 · <b>locator</b>: attribute</td></tr><tr><td class="t">21.5s</td><td class="k evidence">evidence.captured</td><td class="detail"><b>s04_click_button_search</b><img class="shot" loading="lazy" src="screens/0045-s04-click-button-search.jpg" onclick="this.classList.toggle('big')"></td></tr><tr><td class="t">21.5s</td><td class="k step">step.started</td><td class="detail"><b>step</b>: s05_click_link_member_id · <b>intent</b>: Click link &#x27;{{inputs.member_id}}&#x27; (main frame)</td></tr><tr><td class="t">21.5s</td><td class="k policy">policy.decision</td><td class="detail"><b>verdict</b>: allow · <b>risk</b>: reversible · <b>reason</b>: navigates or submits without a commit keyword</td></tr><tr><td class="t">21.5s</td><td class="k step">step.completed</td><td class="detail"><b>step</b>: s05_click_link_member_id · <b>duration_ms</b>: 92 · <b>locator</b>: role</td></tr><tr><td class="t">21.6s</td><td class="k evidence">evidence.captured</td><td class="detail"><b>s05_click_link_member_id</b><img class="shot" loading="lazy" src="screens/0049-s05-click-link-member-id.jpg" onclick="this.classList.toggle('big')"></td></tr><tr><td class="t">21.6s</td><td class="k step">step.started</td><td class="detail"><b>step</b>: s06_read_savings_balance · <b>intent</b>: Read savings_balance from cell in column &#x27;CURRENT BALANCE&#x27;, row &#x27;SHARE SAVINGS&#x27; (main frame)</td></tr><tr><td class="t">21.6s</td><td class="k policy">policy.decision</td><td class="detail"><b>verdict</b>: allow · <b>risk</b>: read_only · <b>reason</b>: extract does not change application state</td></tr><tr><td class="t">21.6s</td><td class="k output">output.extracted</td><td class="detail"><b>output</b>: savings_balance · <b>value</b>: 2418.07</td></tr><tr><td class="t">21.6s</td><td class="k step">step.completed</td><td class="detail"><b>step</b>: s06_read_savings_balance · <b>duration_ms</b>: 6 · <b>locator</b>: table_cell</td></tr><tr><td class="t">21.6s</td><td class="k evidence">evidence.captured</td><td class="detail"><b>s06_read_savings_balance</b><img class="shot" loading="lazy" src="screens/0054-s06-read-savings-balance.jpg" onclick="this.classList.toggle('big')"></td></tr><tr><td class="t">21.6s</td><td class="k step">step.started</td><td class="detail"><b>step</b>: s07_read_member_name · <b>intent</b>: Read member_name from &#x27;NAME&#x27; cell (main frame)</td></tr><tr><td class="t">21.6s</td><td class="k policy">policy.decision</td><td class="detail"><b>verdict</b>: allow · <b>risk</b>: read_only · <b>reason</b>: extract does not change application state</td></tr><tr><td class="t">21.6s</td><td class="k output">output.extracted</td><td class="detail"><b>output</b>: member_name · <b>value</b>: {{outputs.member_name}}</td></tr><tr><td class="t">21.6s</td><td class="k step">step.completed</td><td class="detail"><b>step</b>: s07_read_member_name · <b>duration_ms</b>: 5 · <b>locator</b>: label</td></tr><tr><td class="t">21.7s</td><td class="k evidence">evidence.captured</td><td class="detail"><b>s07_read_member_name</b><img class="shot" loading="lazy" src="screens/0059-s07-read-member-name.jpg" onclick="this.classList.toggle('big')"></td></tr><tr><td class="t">21.7s</td><td class="k checkpoint">checkpoint.verified</td><td class="detail"><b>capability</b>: legacycore.member.get_savings_balance@1.0.3 · <b>description</b>: &#x27;MEMBER DETAIL&#x27; is shown and every output was read</td></tr><tr><td class="t">21.7s</td><td class="k evidence">evidence.captured</td><td class="detail"><b>success</b><img class="shot" loading="lazy" src="screens/0061-success.jpg" onclick="this.classList.toggle('big')"></td></tr><tr><td class="t">21.7s</td><td class="k run">run.finished</td><td class="detail"><b>status</b>: succeeded · <b>duration_ms</b>: 21417 · <b>outcome</b>: None · <b>failure</b>: None</td></tr></table><h2>Intervention iv_f3c3cde4</h2><pre>{
+  &quot;id&quot;: &quot;iv_f3c3cde4&quot;,
+  &quot;session_id&quot;: &quot;20261001T043301Z-replay-legacycore-member-get-savings-balance-ac-2bab&quot;,
+  &quot;run_id&quot;: &quot;20261001T043301Z-replay-legacycore-member-get-savings-balance-ac-2bab&quot;,
+  &quot;run_kind&quot;: &quot;replay&quot;,
+  &quot;subject&quot;: &quot;legacycore.member.get_savings_balance@1.0.3&quot;,
+  &quot;step_id&quot;: &quot;s02_click_link_member_inquiry&quot;,
+  &quot;step_index&quot;: 1,
+  &quot;step_intent&quot;: &quot;Click link &#x27;Member Inquiry&#x27; (menu frame)&quot;,
+  &quot;reason_code&quot;: &quot;UNEXPECTED_STATE&quot;,
+  &quot;reason&quot;: &quot;after &#x27;Click link &#x27;Member Inquiry&#x27; (menu frame)&#x27; the screen did not reach the expected state, and no known handler recognised what it shows instead. Expected: main frame at mbrinq.asp; text &#x27;MEMBER INQUIRY&#x27; visible in main&quot;,
+  &quot;url&quot;: &quot;http://127.0.0.1:8600/acme/default.asp&quot;,
+  &quot;screenshot&quot;: &quot;screens/0028-escalation-s02-click-link-member-inquiry.jpg&quot;,
+  &quot;allowed_resolutions&quot;: [
+    &quot;retry_step&quot;,
+    &quot;step_completed&quot;,
+    &quot;abort&quot;
+  ],
+  &quot;status&quot;: &quot;resolved&quot;,
+  &quot;created_at&quot;: &quot;2026-10-01T04:33:17.248251Z&quot;,
+  &quot;claimed_by&quot;: &quot;dana.ops&quot;,
+  &quot;claimed_at&quot;: &quot;2026-10-01T04:33:18.851567Z&quot;,
+  &quot;resolved_at&quot;: &quot;2026-10-01T04:33:22.412263Z&quot;,
+  &quot;resolution&quot;: &quot;step_completed&quot;,
+  &quot;note&quot;: &quot;Completed the annual BSA/AML attestation for the service account; Member Inquiry is open.&quot;,
+  &quot;human_actions&quot;: [
+    {
+      &quot;at&quot;: &quot;2026-10-01T04:33:19.692207Z&quot;,
+      &quot;kind&quot;: &quot;click&quot;,
+      &quot;description&quot;: &quot;clicked checkbox (label &#x27;I confirm I have completed the annual BSA/AML training&#x27;)&quot;,
+      &quot;frame&quot;: &quot;main&quot;,
+      &quot;value&quot;: null,
+      &quot;locators&quot;: [
+        {
+          &quot;by&quot;: &quot;attribute&quot;,
+          &quot;tag&quot;: &quot;input&quot;,
+          &quot;attribute&quot;: &quot;name&quot;,
+          &quot;value&quot;: &quot;ATTEST&quot;
+        },
+        {
+          &quot;by&quot;: &quot;label&quot;,
+          &quot;role&quot;: &quot;checkbox&quot;,
+          &quot;label&quot;: &quot;I confirm I have completed the annual BSA/AML training&quot;
+        },
+        {
+          &quot;by&quot;: &quot;css&quot;,
+          &quot;selector&quot;: &quot;#chkAttest&quot;
+        }
+      ],
+      &quot;element&quot;: {
+        &quot;role&quot;: &quot;checkbox&quot;,
+        &quot;name&quot;: &quot;&quot;,
+        &quot;label&quot;: &quot;I confirm I have completed the annual BSA/AML training&quot;,
+        &quot;tag&quot;: &quot;input&quot;,
+        &quot;attrs&quot;: {
+          &quot;name&quot;: &quot;ATTEST&quot;,
+          &quot;id&quot;: &quot;chkAttest&quot;
+        }
+      },
+      &quot;url&quot;: &quot;http://127.0.0.1:8600/acme/mbrinq.asp&quot;
+    },
+    {
+      &quot;at&quot;: &quot;2026-10-01T04:33:19.693956Z&quot;,
+      &quot;kind&quot;: &quot;change&quot;,
+      &quot;description&quot;: &quot;set checkbox (label &#x27;I confirm I have completed the annual BSA/AML training&#x27;) to &#x27;checked&#x27;&quot;,
+      &quot;frame&quot;: &quot;main&quot;,
+      &quot;value&quot;: &quot;checked&quot;,
+      &quot;locators&quot;: [
+        {
+          &quot;by&quot;: &quot;attribute&quot;,
+          &quot;tag&quot;: &quot;input&quot;,
+          &quot;attribute&quot;: &quot;name&quot;,
+          &quot;value&quot;: &quot;ATTEST&quot;
+        },
+        {
+          &quot;by&quot;: &quot;label&quot;,
+          &quot;role&quot;: &quot;checkbox&quot;,
+          &quot;label&quot;: &quot;I confirm I have completed the annual BSA/AML training&quot;
+        },
+        {
+          &quot;by&quot;: &quot;css&quot;,
+          &quot;selector&quot;: &quot;#chkAttest&quot;
+        }
+      ],
+      &quot;element&quot;: {
+        &quot;role&quot;: &quot;checkbox&quot;,
+        &quot;name&quot;: &quot;&quot;,
+        &quot;label&quot;: &quot;I confirm I have completed the annual BSA/AML training&quot;,
+        &quot;tag&quot;: &quot;input&quot;,
+        &quot;attrs&quot;: {
+          &quot;name&quot;: &quot;ATTEST&quot;,
+          &quot;id&quot;: &quot;chkAttest&quot;
+        }
+      },
+      &quot;url&quot;: &quot;http://127.0.0.1:8600/acme/mbrinq.asp&quot;
+    },
+    {
+      &quot;at&quot;: &quot;2026-10-01T04:33:20.701917Z&quot;,
+      &quot;kind&quot;: &quot;click&quot;,
+      &quot;description&quot;: &quot;clicked button &#x27;Continue&#x27;&quot;,
+      &quot;frame&quot;: &quot;main&quot;,
+      &quot;value&quot;: null,
+      &quot;locators&quot;: [
+        {
+          &quot;by&quot;: &quot;attribute&quot;,
+          &quot;tag&quot;: &quot;input&quot;,
+          &quot;attribute&quot;: &quot;name&quot;,
+          &quot;value&quot;: &quot;BTNACK&quot;
+        },
+        {
+          &quot;by&quot;: &quot;role&quot;,
+          &quot;role&quot;: &quot;button&quot;,
+          &quot;name&quot;: &quot;Continue&quot;
+        },
+        {
+          &quot;by&quot;: &quot;css&quot;,
+          &quot;selector&quot;: &quot;#btnGo&quot;
+        }
+      ],
+      &quot;element&quot;: {
+        &quot;role&quot;: &quot;button&quot;,
+        &quot;name&quot;: &quot;Continue&quot;,
+        &quot;label&quot;: &quot;&quot;,
+        &quot;tag&quot;: &quot;input&quot;,
+        &quot;attrs&quot;: {
+          &quot;name&quot;: &quot;BTNACK&quot;,
+          &quot;id&quot;: &quot;btnGo&quot;
+        }
+      },
+      &quot;url&quot;: &quot;http://127.0.0.1:8600/acme/mbrinq.asp&quot;
+    }
+  ]
+}</pre><h2>Raw</h2><details><summary>result.json</summary><pre>{
+  &quot;run_id&quot;: &quot;20261001T043301Z-replay-legacycore-member-get-savings-balance-ac-2bab&quot;,
+  &quot;capability&quot;: {
+    &quot;id&quot;: &quot;legacycore.member.get_savings_balance&quot;,
+    &quot;version&quot;: &quot;1.0.3&quot;,
+    &quot;effective_hash&quot;: &quot;sha256:1608fb7ffdcf839e&quot;,
+    &quot;layers&quot;: [
+      &quot;capability legacycore.member.get_savings_balance@1.0.3 (5ba5110e28a7)&quot;,
+      &quot;app legacycore (daa7527aa8f0)&quot;
+    ]
+  },
+  &quot;tenant&quot;: &quot;acme&quot;,
+  &quot;status&quot;: &quot;succeeded&quot;,
+  &quot;outputs&quot;: {
+    &quot;savings_balance&quot;: &quot;2418.07&quot;,
+    &quot;member_name&quot;: &quot;{{outputs.member_name}}&quot;
+  },
+  &quot;outcome&quot;: null,
+  &quot;failure&quot;: null,
+  &quot;recoveries&quot;: [],
+  &quot;warnings&quot;: [],
+  &quot;interventions&quot;: [
+    &quot;iv_f3c3cde4&quot;
+  ],
+  &quot;steps&quot;: [
+    {
+      &quot;capability&quot;: &quot;legacycore.session.sign_on@1.0.0&quot;,
+      &quot;step_id&quot;: &quot;s01_open_signon_asp&quot;,
+      &quot;status&quot;: &quot;ok&quot;,
+      &quot;duration_ms&quot;: 63,
+      &quot;locator&quot;: null
+    },
+    {
+      &quot;capability&quot;: &quot;legacycore.session.sign_on@1.0.0&quot;,
+      &quot;step_id&quot;: &quot;s02_fill_user_id_textbox&quot;,
+      &quot;status&quot;: &quot;ok&quot;,
+      &quot;duration_ms&quot;: 73,
+      &quot;locator&quot;: &quot;attribute&quot;
+    },
+    {
+      &quot;capability&quot;: &quot;legacycore.session.sign_on@1.0.0&quot;,
+      &quot;step_id&quot;: &quot;s03_fill_password_textbox&quot;,
+      &quot;status&quot;: &quot;ok&quot;,
+      &quot;duration_ms&quot;: 89,
+      &quot;locator&quot;: &quot;attribute&quot;
+    },
+    {
+      &quot;capability&quot;: &quot;legacycore.session.sign_on@1.0.0&quot;,
+      &quot;step_id&quot;: &quot;s04_click_button_sign_on&quot;,
+      &quot;status&quot;: &quot;ok&quot;,
+      &quot;duration_ms&quot;: 102,
+      &quot;locator&quot;: &quot;attribute&quot;
+    },
+    {
+      &quot;capability&quot;: &quot;legacycore.member.get_savings_balance@1.0.3&quot;,
+      &quot;step_id&quot;: &quot;s01_open_default_asp&quot;,
+      &quot;status&quot;: &quot;ok&quot;,
+      &quot;duration_ms&quot;: 60,
+      &quot;locator&quot;: null
+    },
+    {
+      &quot;capability&quot;: &quot;legacycore.member.get_savings_balance@1.0.3&quot;,
+      &quot;step_id&quot;: &quot;s02_click_link_member_inquiry&quot;,
+      &quot;status&quot;: &quot;failed&quot;,
+      &quot;duration_ms&quot;: 0,
+      &quot;locator&quot;: null
+    },
+    {
+      &quot;capability&quot;: &quot;legacycore.member.get_savings_balance@1.0.3&quot;,
+      &quot;step_id&quot;: &quot;s02_click_link_member_inquiry&quot;,
+      &quot;status&quot;: &quot;human_completed&quot;,
+      &quot;duration_ms&quot;: 0,
+      &quot;locator&quot;: null
+    },
+    {
+      &quot;capability&quot;: &quot;legacycore.member.get_savings_balance@1.0.3&quot;,
+      &quot;step_id&quot;: &quot;s03_fill_member_number_textbox&quot;,
+      &quot;status&quot;: &quot;ok&quot;,
+      &quot;duration_ms&quot;: 78,
+      &quot;locator&quot;: &quot;attribute&quot;
+    },
+    {
+      &quot;capability&quot;: &quot;legacycore.member.get_savings_balance@1.0.3&quot;,
+      &quot;step_id&quot;: &quot;s04_click_button_search&quot;,
+      &quot;status&quot;: &quot;ok&quot;,
+      &quot;duration_ms&quot;: 93,
+      &quot;locator&quot;: &quot;attribute&quot;
+    },
+    {
+      &quot;capability&quot;: &quot;legacycore.member.get_savings_balance@1.0.3&quot;,
+      &quot;step_id&quot;: &quot;s05_click_link_member_id&quot;,
+      &quot;status&quot;: &quot;ok&quot;,
+      &quot;duration_ms&quot;: 92,
+      &quot;locator&quot;: &quot;role&quot;
+    },
+    {
+      &quot;capability&quot;: &quot;legacycore.member.get_savings_balance@1.0.3&quot;,
+      &quot;step_id&quot;: &quot;s06_read_savings_balance&quot;,
+      &quot;status&quot;: &quot;ok&quot;,
+      &quot;duration_ms&quot;: 6,
+      &quot;locator&quot;: &quot;table_cell&quot;
+    },
+    {
+      &quot;capability&quot;: &quot;legacycore.member.get_savings_balance@1.0.3&quot;,
+      &quot;step_id&quot;: &quot;s07_read_member_name&quot;,
+      &quot;status&quot;: &quot;ok&quot;,
+      &quot;duration_ms&quot;: 5,
+      &quot;locator&quot;: &quot;label&quot;
+    }
+  ],
+  &quot;started_at&quot;: &quot;2026-10-01T04:33:01.520612Z&quot;,
+  &quot;duration_ms&quot;: 21417,
+  &quot;evidence_dir&quot;: &quot;runs/20261001T043301Z-replay-legacycore-member-get-savings-balance-ac-2bab&quot;
+}</pre></details></main></body></html>

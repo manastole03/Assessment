@@ -1,0 +1,74 @@
+# Vendor-product profile for LegacyCore Member Services.
+#
+# Knowledge here is shared by every capability and every tenant running LegacyCore: how sessions are
+# established, which vendor screens are interstitials or errors, and which URL parameters are noise.
+# Writing a handler once here fixes that condition for all capabilities on all institutions.
+schema: rote.app/v1
+id: legacycore
+product: LegacyCore Member Services
+surface: web
+session_capability: legacycore.session.sign_on
+home_path: default.asp
+version_probe: {frame: banner, pattern: "LegacyCore v(?P<version>\\d+\\.\\d+\\.\\d+)"}
+volatile_query_params: [tok]
+locator_preference: [attribute, role, table_cell, label, css]
+
+handlers:
+  - id: session_expired
+    description: Vendor session-timeout page. Sign on again, then restart the (idempotent) capability.
+    kind: recoverable
+    when: [{type: text, text: YOUR SESSION HAS EXPIRED}]
+    recovery: {do: reauthenticate}
+    max_attempts: 1
+
+  - id: session_warning_dialog
+    description: Native confirm() warning that the session is about to expire; accepting keeps it alive.
+    kind: recoverable
+    when: [{type: dialog, text: SESSION WILL EXPIRE}]
+    recovery: {do: accept_dialog}
+
+  - id: maintenance_notice
+    description: Scheduled-maintenance interstitial shown in place of the requested page.
+    kind: recoverable
+    when:
+      - {type: text, text: SYSTEM NOTICE, frame: main}
+      - {type: text, text: SCHEDULED MAINTENANCE, frame: main}
+    recovery:
+      do: click
+      target:
+        description: Acknowledge button on the system notice
+        frame: {name: main}
+        locators:
+          - {by: role, role: button, name: Acknowledge}
+          - {by: attribute, tag: input, attribute: name, value: BTNACK}
+
+  - id: daily_security_notice
+    description: Optional vendor feature (enabled per institution) shown once after sign-on.
+    kind: recoverable
+    when: [{type: text, text: DAILY SECURITY NOTICE}]
+    recovery:
+      do: click
+      target:
+        description: Continue button on the security notice
+        locators:
+          - {by: role, role: button, name: Continue}
+          - {by: attribute, tag: input, attribute: name, value: BTNACK}
+
+  - id: service_unavailable
+    description: Transient HTTP 503 page from the application server; retry with backoff.
+    kind: recoverable
+    when: [{type: text, text: SERVICE TEMPORARILY UNAVAILABLE, frame: main}]
+    recovery: {do: reload, frame: main, backoff_ms: 1000}
+    max_attempts: 3
+
+  - id: invalid_credentials
+    description: Sign-on rejected. Retrying cannot help; the tenant's credential binding needs attention.
+    kind: failure
+    when: [{type: text, text: INVALID USER ID OR PASSWORD}]
+    outcome: {code: INVALID_CREDENTIALS, message: The service account was rejected at sign-on.}
+
+  - id: function_not_authorized
+    description: The service account lacks the entitlement for this function (SEC-403).
+    kind: failure
+    when: [{type: text, text: FUNCTION NOT AUTHORIZED, frame: main}]
+    outcome: {code: FUNCTION_NOT_AUTHORIZED, message: The automation's service account is not entitled to this function.}

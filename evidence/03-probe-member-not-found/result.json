@@ -1,0 +1,104 @@
+{
+  "run_id": "20261001T043146Z-probe-legacycore-member-get-savings-balance-pr-9cca",
+  "capability": {
+    "id": "legacycore.member.get_savings_balance",
+    "version": "1.0.0",
+    "effective_hash": "sha256:dc1ad65f7fcfcdce",
+    "layers": [
+      "capability legacycore.member.get_savings_balance@1.0.0 (9c5cac8379d3)",
+      "app legacycore (daa7527aa8f0)"
+    ]
+  },
+  "tenant": "acme",
+  "status": "failed",
+  "outputs": null,
+  "outcome": null,
+  "failure": {
+    "code": "TARGET_NOT_FOUND",
+    "message": "could not find link '{{inputs.member_id}}' (main frame) within 15000 ms",
+    "app_code": null,
+    "capability": "legacycore.member.get_savings_balance@1.0.0",
+    "step_id": "s05_click_link_member_id",
+    "step_index": 4,
+    "step_intent": "Click link '{{inputs.member_id}}' (main frame)",
+    "expected": "link '{{inputs.member_id}}' (main frame) (locators tried: role, table_cell, css)",
+    "observed": "locator results: role: 0 match(es); table_cell: 0 match(es); css: 0 match(es)\n[top @ default.asp] \n[banner @ banner.asp] ACME FEDERAL CREDIT UNION | MEMBER SERVICES\tSIGNED ON: {{secrets.username}} \u00a0|\u00a0 BRANCH 001 | LegacyCore v4.2.1\n[menu @ menu.asp] FUNCTIONS | Home | Member Inquiry | Transaction Posting | Reports | Collections | Sign Off\n[main @ mbrlist.asp] MEMBER INQUIRY - RESULTS | NO RECORDS MATCH SEARCH CRITERIA | New Search",
+    "retryable": false,
+    "evidence": {
+      "screenshot": "screens/0038-failure-target-not-found.jpg",
+      "observation": "screens/0038-failure-target-not-found.txt",
+      "dom": "dom/0038-failure-target-not-found/"
+    }
+  },
+  "recoveries": [],
+  "warnings": [],
+  "interventions": [],
+  "steps": [
+    {
+      "capability": "legacycore.session.sign_on@1.0.0",
+      "step_id": "s01_open_signon_asp",
+      "status": "ok",
+      "duration_ms": 61,
+      "locator": null
+    },
+    {
+      "capability": "legacycore.session.sign_on@1.0.0",
+      "step_id": "s02_fill_user_id_textbox",
+      "status": "ok",
+      "duration_ms": 69,
+      "locator": "attribute"
+    },
+    {
+      "capability": "legacycore.session.sign_on@1.0.0",
+      "step_id": "s03_fill_password_textbox",
+      "status": "ok",
+      "duration_ms": 77,
+      "locator": "attribute"
+    },
+    {
+      "capability": "legacycore.session.sign_on@1.0.0",
+      "step_id": "s04_click_button_sign_on",
+      "status": "ok",
+      "duration_ms": 102,
+      "locator": "attribute"
+    },
+    {
+      "capability": "legacycore.member.get_savings_balance@1.0.0",
+      "step_id": "s01_open_default_asp",
+      "status": "ok",
+      "duration_ms": 60,
+      "locator": null
+    },
+    {
+      "capability": "legacycore.member.get_savings_balance@1.0.0",
+      "step_id": "s02_click_link_member_inquiry",
+      "status": "ok",
+      "duration_ms": 94,
+      "locator": "attribute"
+    },
+    {
+      "capability": "legacycore.member.get_savings_balance@1.0.0",
+      "step_id": "s03_fill_member_number_textbox",
+      "status": "ok",
+      "duration_ms": 65,
+      "locator": "attribute"
+    },
+    {
+      "capability": "legacycore.member.get_savings_balance@1.0.0",
+      "step_id": "s04_click_button_search",
+      "status": "ok",
+      "duration_ms": 93,
+      "locator": "attribute"
+    },
+    {
+      "capability": "legacycore.member.get_savings_balance@1.0.0",
+      "step_id": "s05_click_link_member_id",
+      "status": "failed",
+      "duration_ms": 0,
+      "locator": null
+    }
+  ],
+  "started_at": "2026-10-01T04:31:47.013354Z",
+  "duration_ms": 16007,
+  "evidence_dir": "runs/20261001T043146Z-probe-legacycore-member-get-savings-balance-pr-9cca"
+}

@@ -1,0 +1,26 @@
+<html><head>
+<title>LegacyCore Member Services</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<link rel="stylesheet" href="lc.css">
+</head>
+<body bgcolor="#F4F4EC" leftmargin="8" topmargin="8">
+
+<table width="100%" cellpadding="3" cellspacing="0"><tbody><tr><td class="bar">MEMBER INQUIRY</td></tr></tbody></table>
+<br>
+
+<form name="frmFind" method="get" action="mbrlist.asp">
+<div style="padding:8px;border:1px solid #999;width:420px"><b>FIND A MEMBER</b><br><br>
+<label>Member ID <input type="text" name="MEMBER_ID" size="12" style=""></label>
+<button type="button" name="BTN_LOOKUP" onclick="location.href='mbrlist.asp?MBRNO='+document.forms[0].MEMBER_ID.value">Lookup</button>
+</div></form>
+
+<script>
+function doSearch() {
+  var f = document.forms['frmInq'];
+  if (f.MBRNO.value == '' && f.LNAME.value == '') { alert('ENTER A MEMBER NUMBER OR LAST NAME'); return; }
+  f.submit();
+}
+</script>
+
+
+</body></html>

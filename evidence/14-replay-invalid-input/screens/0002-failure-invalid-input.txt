@@ -1,0 +1,3 @@
+URL: about:blank  (title: )
+Frames: top (blank)
+Native dialog: none

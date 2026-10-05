@@ -1,0 +1,10 @@
+<html>
+<head>
+<title>LegacyCore Member Services</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<link rel="stylesheet" href="lc.css">
+</head>
+<body bgcolor="#F4F4EC" leftmargin="8" topmargin="8"{% if confirm_dialog %} onload="if(!confirm('YOUR SESSION WILL EXPIRE IN 2 MINUTES. CONTINUE WORKING?')){top.location='signoff.asp';}"{% endif %}>
+{% block body %}{% endblock %}
+</body>
+</html>

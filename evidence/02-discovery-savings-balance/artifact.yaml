@@ -1,0 +1,136 @@
+schema: rote.capability/v1
+id: legacycore.member.get_savings_balance
+version: 1.0.0
+kind: task
+title: Get a member's savings balance
+description: Looks up a member by member number and reads the current balance of their share savings account and
+  the member's name.
+status: draft
+app: {id: legacycore, surface: web, product_versions: '>=4.2.0,<5.0.0'}
+requires_session: legacycore.session.sign_on
+idempotent: true
+side_effects: reversible
+inputs:
+  member_id: {type: string, description: Member number, pattern: '^[0-9]{5,10}$', sensitivity: pii}
+outputs:
+  savings_balance: {type: money, description: Current savings balance, sensitivity: internal}
+  member_name: {type: string, description: Member name as on file, sensitivity: pii}
+steps:
+- id: s01_open_default_asp
+  intent: Open default.asp
+  action: {type: navigate, url: '{{app.base_url}}/default.asp'}
+  risk: read_only
+  expect:
+  - {type: url, path: default.asp}
+- id: s02_click_link_member_inquiry
+  intent: Click link 'Member Inquiry' (menu frame)
+  action:
+    type: click
+    target:
+      description: link 'Member Inquiry' (menu frame)
+      frame: {name: menu}
+      role: link
+      locators:
+      - {by: attribute, tag: a, attribute: href, value: mbrinq.asp}
+      - {by: role, role: link, name: Member Inquiry}
+      - {by: css, selector: 'body > table > tbody > tr:nth-of-type(3) > td > a'}
+  risk: reversible
+  expect:
+  - {type: url, frame: main, path: mbrinq.asp}
+  - {type: text, text: MEMBER INQUIRY, frame: main}
+- id: s03_fill_member_number_textbox
+  intent: Enter {{inputs.member_id}} in 'Member Number' textbox (main frame)
+  action:
+    type: fill
+    target:
+      description: '''Member Number'' textbox (main frame)'
+      frame: {name: main}
+      role: textbox
+      locators:
+      - {by: attribute, tag: input, attribute: name, value: MBRNO}
+      - {by: label, role: textbox, label: Member Number}
+      - {by: css, selector: 'body > form > table > tbody > tr:nth-of-type(1) > td:nth-of-type(2) > input'}
+    value: '{{inputs.member_id}}'
+  risk: reversible
+- id: s04_click_button_search
+  intent: Click button 'Search' (main frame)
+  action:
+    type: click
+    target:
+      description: button 'Search' (main frame)
+      frame: {name: main}
+      role: button
+      locators:
+      - {by: attribute, tag: input, attribute: name, value: SRCH}
+      - {by: role, role: button, name: Search}
+      - by: css
+        selector: body > form > table > tbody > tr:nth-of-type(3) > td:nth-of-type(2) > input:nth-of-type(1)
+  risk: reversible
+  expect:
+  - type: url
+    frame: main
+    path: mbrlist.asp
+    query: {MBRNO: '{{inputs.member_id}}'}
+  - {type: text, text: MEMBER INQUIRY - RESULTS, frame: main}
+- id: s05_click_link_member_id
+  intent: Click link '{{inputs.member_id}}' (main frame)
+  action:
+    type: click
+    target:
+      description: link '{{inputs.member_id}}' (main frame)
+      frame: {name: main}
+      role: link
+      locators:
+      - {by: role, role: link, name: '{{inputs.member_id}}'}
+      - {by: table_cell, row: '{{inputs.member_id}}', column: 'MBR #', role: link}
+      - by: css
+        selector: body > table:nth-of-type(2) > tbody > tr:nth-of-type(2) > td:nth-of-type(1) > a
+  risk: reversible
+  expect:
+  - type: url
+    frame: main
+    path: mbrdtl.asp
+    query: {M: '{{inputs.member_id}}'}
+  - {type: text, text: MEMBER DETAIL, frame: main}
+- id: s06_read_savings_balance
+  intent: Read savings_balance from cell in column 'CURRENT BALANCE', row 'SHARE SAVINGS' (main frame)
+  action:
+    type: extract
+    target:
+      description: cell in column 'CURRENT BALANCE', row 'SHARE SAVINGS' (main frame)
+      frame: {name: main}
+      role: cell
+      locators:
+      - {by: table_cell, row: SHARE SAVINGS, column: CURRENT BALANCE}
+    output: savings_balance
+  risk: read_only
+- id: s07_read_member_name
+  intent: Read member_name from 'NAME' cell (main frame)
+  action:
+    type: extract
+    target:
+      description: '''NAME'' cell (main frame)'
+      frame: {name: main}
+      role: cell
+      locators:
+      - {by: label, role: cell, label: NAME}
+    output: member_name
+  risk: read_only
+success:
+  description: '''MEMBER DETAIL'' is shown and every output was read'
+  all_of:
+  - type: url
+    frame: main
+    path: mbrdtl.asp
+    query: {M: '{{inputs.member_id}}'}
+  - {type: text, text: MEMBER DETAIL, frame: main}
+  - {type: output, name: savings_balance}
+  - {type: output, name: member_name}
+provenance:
+  method: discovery
+  recorded_at: '2026-10-01T04:31:46.547736Z'
+  source_run: 20261001T043137Z-discovery-legacycore-member-get-savings-balance-a71e
+  model: scripted
+  goal: Look up member {{inputs.member_id}} and read their current share savings balance and the member's name
+  tenant: acme
+  product_version: 4.2.1

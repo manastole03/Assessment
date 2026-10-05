@@ -1,0 +1,16 @@
+{% extends "_page.html" %}
+{% block body %}
+<table width="100%" cellpadding="3" cellspacing="0"><tr><td class="bar">CONFIRM NEW SHARE</td></tr></table>
+<br>REVIEW THE DETAILS BELOW. SELECT POST TO OPEN THE SHARE. <b>THIS ACTION CANNOT BE UNDONE.</b><br><br>
+<table border="0" cellpadding="3" cellspacing="0">
+<tr><td class="lbl">MEMBER NUMBER:</td><td>{{ m.number }}</td></tr>
+<tr><td class="lbl">SHARE TYPE:</td><td>{{ share_type }}</td></tr>
+<tr><td class="lbl">NICKNAME:</td><td>{{ form.NICK }}</td></tr>
+<tr><td class="lbl">OPENING DEPOSIT:</td><td>{{ amount }}</td></tr>
+<tr><td class="lbl">FUNDING SOURCE:</td><td>{{ funding }}</td></tr>
+</table>
+<form name="frmPost" method="post" action="newshr_post.asp">
+{% for k, v in form.items() %}<input type="hidden" name="{{ k }}" value="{{ v }}">{% endfor %}
+<br><input type="submit" name="BTNPOST" value="Post"> <input type="button" value="Cancel" onclick="location.href='mbrdtl.asp?M={{ m.number }}'">
+</form>
+{% endblock %}

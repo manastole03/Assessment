@@ -1,0 +1,6 @@
+{% extends "_page.html" %}
+{% block body %}
+<table width="100%" cellpadding="3" cellspacing="0"><tr><td class="bar">{{ title }}</td></tr></table>
+<br>{% if error %}<span class="err">{{ message }}</span>{% else %}{{ message }}{% endif %}
+{% if link %}<br><br><a href="{{ link.href }}"{% if link.target %} target="{{ link.target }}"{% endif %}>{{ link.text }}</a>{% endif %}
+{% endblock %}

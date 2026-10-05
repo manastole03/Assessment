@@ -1,0 +1,183 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1"><title>Run report</title><style>
+:root{--bg:#fbfbf9;--fg:#1d1d1b;--muted:#6b6b66;--line:#e4e3dc;--card:#fff;--ok:#1f7a4d;--warn:#a86a00;
+--bad:#b3261e;--biz:#7a3fa0;--info:#1f5fa8}
+@media (prefers-color-scheme:dark){:root{--bg:#161614;--fg:#ecebe6;--muted:#9c9b94;--line:#2e2d29;--card:#1e1e1b}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font:14px/1.5 ui-sans-serif,system-ui,-apple-system,Segoe UI,sans-serif}
+main{max-width:1100px;margin:0 auto;padding:24px 16px 64px}h1{font-size:20px;margin:0 0 4px}h2{font-size:15px;margin:28px 0 8px}
+.meta{color:var(--muted);font-size:13px}.pill{display:inline-block;padding:1px 8px;border-radius:999px;font-size:12px;font-weight:600;color:#fff}
+.succeeded{background:var(--ok)}.failed{background:var(--bad)}.business_outcome{background:var(--biz)}.unknown{background:var(--muted)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px 16px;margin-top:14px}
+dl{display:grid;grid-template-columns:max-content 1fr;gap:6px 16px;margin:0}dt{color:var(--muted)}dd{margin:0;word-break:break-word}
+table{width:100%;border-collapse:collapse;background:var(--card);border:1px solid var(--line);border-radius:8px;overflow:hidden}
+td{padding:6px 10px;border-top:1px solid var(--line);vertical-align:top}td.t{color:var(--muted);white-space:nowrap;width:70px;font-variant-numeric:tabular-nums}
+td.k{white-space:nowrap;width:190px;font-family:ui-monospace,Menlo,monospace;font-size:12px}
+.k.step{color:var(--info)}.k.handler,.k.recovery{color:var(--warn)}.k.intervention,.k.human,.k.control{color:var(--biz)}.k.run,.k.discovery{font-weight:700}
+.k.policy,.k.failure{color:var(--bad)}.k.agent{color:var(--info)}.k.locator{color:var(--warn)}
+pre{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:12px;overflow:auto;font-size:12px;white-space:pre-wrap}
+img.shot{max-width:320px;border:1px solid var(--line);border-radius:4px;display:block;margin-top:6px;cursor:zoom-in}
+img.shot.big{max-width:100%}.detail{color:var(--muted);font-size:12px;word-break:break-word}.detail b{color:var(--fg)}
+ul{margin:4px 0;padding-left:18px}code{font-family:ui-monospace,Menlo,monospace;font-size:12px}
+</style></head>
+<body><main><h1>Look up member {{inputs.member_id}} and read their current share savings balance and the member&#x27;s name</h1>
+<div class="meta"><span class="pill succeeded">succeeded</span> · discovery
+ · run <code>20261001T043137Z-discovery-legacycore-member-get-savings-balance-a71e</code> · 53 events</div>
+<div class="card"><dl><dt>capability</dt><dd><code>legacycore.member.get_savings_balance@1.0.0</code></dd><dt>model</dt><dd>scripted</dd><dt>turns</dt><dd>8</dd><dt>actions</dt><dd>4</dd><dt>estimated_cost_usd</dt><dd>0.0</dd></dl></div>
+<h2>Timeline</h2><table><tr><td class="t">0.3s</td><td class="k console">console.started</td><td class="detail"><b>url</b>: http://127.0.0.1:8765</td></tr><tr><td class="t">0.3s</td><td class="k run">run.started</td><td class="detail"><b>kind</b>: discovery · <b>run_id</b>: 20261001T043137Z-discovery-legacycore-member-get-savings-balance-a71e · <b>subject</b>: Look up member {{inputs.member_id}} and read their current share savings balance and the member&#x27;s name · <b>model</b>: scripted · <b>tenant</b>: acme · <b>evidence_dir</b>: runs/20261001T043137Z-discovery-legacycore-member-get-savings-balance-a71e · <b>inputs</b>: [&quot;member_id&quot;]</td></tr><tr><td class="t">0.3s</td><td class="k session">session.establishing</td><td class="detail"><b>capability</b>: legacycore.session.sign_on@1.0.0</td></tr><tr><td class="t">0.3s</td><td class="k step">step.started</td><td class="detail"><b>step</b>: s01_open_signon_asp · <b>intent</b>: Open signon.asp</td></tr><tr><td class="t">0.3s</td><td class="k policy">policy.decision</td><td class="detail"><b>verdict</b>: allow · <b>risk</b>: read_only · <b>reason</b>: navigate does not change application state</td></tr><tr><td class="t">0.3s</td><td class="k step">step.completed</td><td class="detail"><b>step</b>: s01_open_signon_asp · <b>duration_ms</b>: 62 · <b>locator</b>: None</td></tr><tr><td class="t">0.3s</td><td class="k step">step.started</td><td class="detail"><b>step</b>: s02_fill_user_id_textbox · <b>intent</b>: Enter {{secrets.username}} in &#x27;User ID&#x27; textbox</td></tr><tr><td class="t">0.3s</td><td class="k policy">policy.decision</td><td class="detail"><b>verdict</b>: allow · <b>risk</b>: reversible · <b>reason</b>: edits unsaved form state</td></tr><tr><td class="t">0.4s</td><td class="k step">step.completed</td><td class="detail"><b>step</b>: s02_fill_user_id_textbox · <b>duration_ms</b>: 72 · <b>locator</b>: attribute</td></tr><tr><td class="t">0.4s</td><td class="k step">step.started</td><td class="detail"><b>step</b>: s03_fill_password_textbox · <b>intent</b>: Enter {{secrets.password}} in &#x27;Password&#x27; textbox</td></tr><tr><td class="t">0.4s</td><td class="k policy">policy.decision</td><td class="detail"><b>verdict</b>: allow · <b>risk</b>: reversible · <b>reason</b>: edits unsaved form state</td></tr><tr><td class="t">0.5s</td><td class="k step">step.completed</td><td class="detail"><b>step</b>: s03_fill_password_textbox · <b>duration_ms</b>: 81 · <b>locator</b>: attribute</td></tr><tr><td class="t">0.5s</td><td class="k step">step.started</td><td class="detail"><b>step</b>: s04_click_button_sign_on · <b>intent</b>: Click button &#x27;Sign On&#x27;</td></tr><tr><td class="t">0.5s</td><td class="k policy">policy.decision</td><td class="detail"><b>verdict</b>: allow · <b>risk</b>: reversible · <b>reason</b>: navigates or submits without a commit keyword</td></tr><tr><td class="t">0.6s</td><td class="k step">step.completed</td><td class="detail"><b>step</b>: s04_click_button_sign_on · <b>duration_ms</b>: 102 · <b>locator</b>: attribute</td></tr><tr><td class="t">0.6s</td><td class="k checkpoint">checkpoint.verified</td><td class="detail"><b>capability</b>: legacycore.session.sign_on@1.0.0 · <b>description</b>: &#x27;FUNCTIONS&#x27; is shown</td></tr><tr><td class="t">2.4s</td><td class="k evidence">evidence.captured</td><td class="detail"><b>turn-00</b><img class="shot" loading="lazy" src="screens/0017-turn-00.jpg" onclick="this.classList.toggle('big')"></td></tr><tr><td class="t">2.4s</td><td class="k agent">agent.action</td><td class="detail"><b>tool</b>: define_capability · <b>summary</b>: id=legacycore.member.get_savings_balance, title=Get a member&#x27;s savings balance, description=Looks up a member by member number and reads the current balance of their share savings account and the member&#x27;s name., inputs=[{&#x27;name&#x27;: &#x27;member_id&#x27;, &#x27;type&#x27;: &#x27;string&#x27;, &#x27;description&#x27;: &#x27;Member number&#x27;, &#x27;sensiti · <b>rationale</b>: scripted</td></tr><tr><td class="t">2.4s</td><td class="k agent">agent.action_result</td><td class="detail"><b>ok</b>: True · <b>message</b>: capability legacycore.member.get_savings_balance declared with inputs [&#x27;member_id&#x27;] and outputs [&#x27;savings_balance&#x27;, &#x27;member_name&#x27;]</td></tr><tr><td class="t">2.4s</td><td class="k agent">agent.action</td><td class="detail"><b>tool</b>: click · <b>summary</b>: ref=e5, target=link &#x27;Member Inquiry&#x27; · <b>rationale</b>: scripted</td></tr><tr><td class="t">2.4s</td><td class="k policy">policy.decision</td><td class="detail"><b>verdict</b>: allow · <b>risk</b>: reversible · <b>reason</b>: navigates or submits without a commit keyword</td></tr><tr><td class="t">2.5s</td><td class="k agent">agent.action_result</td><td class="detail"><b>ok</b>: True · <b>message</b>: clicked link &#x27;Member Inquiry&#x27;</td></tr><tr><td class="t">4.2s</td><td class="k evidence">evidence.captured</td><td class="detail"><b>turn-02</b><img class="shot" loading="lazy" src="screens/0025-turn-02.jpg" onclick="this.classList.toggle('big')"></td></tr><tr><td class="t">4.2s</td><td class="k agent">agent.action</td><td class="detail"><b>tool</b>: fill · <b>summary</b>: ref=e12, input=member_id, target=textbox (label &#x27;Member Number&#x27;) · <b>rationale</b>: scripted</td></tr><tr><td class="t">4.2s</td><td class="k policy">policy.decision</td><td class="detail"><b>verdict</b>: allow · <b>risk</b>: reversible · <b>reason</b>: edits unsaved form state</td></tr><tr><td class="t">4.2s</td><td class="k agent">agent.action_result</td><td class="detail"><b>ok</b>: True · <b>message</b>: entered {{inputs.member_id}} in textbox (label &#x27;Member Number&#x27;)</td></tr><tr><td class="t">5.9s</td><td class="k evidence">evidence.captured</td><td class="detail"><b>turn-03</b><img class="shot" loading="lazy" src="screens/0030-turn-03.jpg" onclick="this.classList.toggle('big')"></td></tr><tr><td class="t">5.9s</td><td class="k agent">agent.action</td><td class="detail"><b>tool</b>: click · <b>summary</b>: ref=e15, target=button &#x27;Search&#x27; · <b>rationale</b>: scripted</td></tr><tr><td class="t">5.9s</td><td class="k policy">policy.decision</td><td class="detail"><b>verdict</b>: allow · <b>risk</b>: reversible · <b>reason</b>: navigates or submits without a commit keyword</td></tr><tr><td class="t">6.0s</td><td class="k agent">agent.action_result</td><td class="detail"><b>ok</b>: True · <b>message</b>: clicked button &#x27;Search&#x27;</td></tr><tr><td class="t">7.7s</td><td class="k evidence">evidence.captured</td><td class="detail"><b>turn-04</b><img class="shot" loading="lazy" src="screens/0035-turn-04.jpg" onclick="this.classList.toggle('big')"></td></tr><tr><td class="t">7.7s</td><td class="k agent">agent.action</td><td class="detail"><b>tool</b>: click · <b>summary</b>: ref=e15, target=link &#x27;{{inputs.member_id}}&#x27; · <b>rationale</b>: scripted</td></tr><tr><td class="t">7.7s</td><td class="k policy">policy.decision</td><td class="detail"><b>verdict</b>: allow · <b>risk</b>: reversible · <b>reason</b>: navigates or submits without a commit keyword</td></tr><tr><td class="t">7.8s</td><td class="k agent">agent.action_result</td><td class="detail"><b>ok</b>: True · <b>message</b>: clicked link &#x27;{{inputs.member_id}}&#x27;</td></tr><tr><td class="t">9.5s</td><td class="k evidence">evidence.captured</td><td class="detail"><b>turn-05</b><img class="shot" loading="lazy" src="screens/0040-turn-05.jpg" onclick="this.classList.toggle('big')"></td></tr><tr><td class="t">9.5s</td><td class="k agent">agent.action</td><td class="detail"><b>tool</b>: extract · <b>summary</b>: ref=e35, output=savings_balance, target=cell &#x27;$2,418.07&#x27; · <b>rationale</b>: scripted</td></tr><tr><td class="t">9.5s</td><td class="k output">output.extracted</td><td class="detail"><b>output</b>: savings_balance · <b>value</b>: 2418.07</td></tr><tr><td class="t">9.5s</td><td class="k agent">agent.action_result</td><td class="detail"><b>ok</b>: True · <b>message</b>: extracted savings_balance = 2418.07</td></tr><tr><td class="t">9.5s</td><td class="k agent">agent.action</td><td class="detail"><b>tool</b>: extract · <b>summary</b>: ref=e16, output=member_name, target=cell &#x27;{{outputs.member_name}}&#x27; (label &#x27;NAME&#x27;) · <b>rationale</b>: scripted</td></tr><tr><td class="t">9.5s</td><td class="k output">output.extracted</td><td class="detail"><b>output</b>: member_name · <b>value</b>: (hidden: sensitive)</td></tr><tr><td class="t">9.5s</td><td class="k agent">agent.action_result</td><td class="detail"><b>ok</b>: True · <b>message</b>: extracted member_name = (hidden: sensitive)</td></tr><tr><td class="t">9.5s</td><td class="k agent">agent.action</td><td class="detail"><b>tool</b>: finish · <b>summary</b>: summary=read balance, success_text=MEMBER DETAIL · <b>rationale</b>: scripted</td></tr><tr><td class="t">9.5s</td><td class="k artifact">artifact.recorded</td><td class="detail"><b>capability</b>: legacycore.member.get_savings_balance@1.0.0 · <b>steps</b>: 7 · <b>path</b>: capabilities/legacycore/legacycore.member.get_savings_balance@1.0.0.yaml · <b>summary</b>: read balance</td></tr><tr><td class="t">9.5s</td><td class="k agent">agent.action_result</td><td class="detail"><b>ok</b>: True · <b>message</b>: recorded legacycore.member.get_savings_balance@1.0.0</td></tr><tr><td class="t">9.5s</td><td class="k discovery">discovery.finished</td><td class="detail"><b>status</b>: succeeded · <b>capability</b>: legacycore.member.get_savings_balance@1.0.0 · <b>failure</b>: None · <b>turns</b>: 8 · <b>usage</b>: {&quot;input_tokens&quot;: 0, &quot;output_tokens&quot;: 0, &quot;cache_read_input_tokens&quot;: 0, &quot;cache_creation_input_tokens&quot;: 0} · <b>estimated_cost_usd</b>: 0.0</td></tr></table><h2>artifact.yaml</h2><pre>schema: rote.capability/v1
+id: legacycore.member.get_savings_balance
+version: 1.0.0
+kind: task
+title: Get a member&#x27;s savings balance
+description: Looks up a member by member number and reads the current balance of their share savings account and
+  the member&#x27;s name.
+status: draft
+app: {id: legacycore, surface: web, product_versions: &#x27;&gt;=4.2.0,&lt;5.0.0&#x27;}
+requires_session: legacycore.session.sign_on
+idempotent: true
+side_effects: reversible
+inputs:
+  member_id: {type: string, description: Member number, pattern: &#x27;^[0-9]{5,10}$&#x27;, sensitivity: pii}
+outputs:
+  savings_balance: {type: money, description: Current savings balance, sensitivity: internal}
+  member_name: {type: string, description: Member name as on file, sensitivity: pii}
+steps:
+- id: s01_open_default_asp
+  intent: Open default.asp
+  action: {type: navigate, url: &#x27;{{app.base_url}}/default.asp&#x27;}
+  risk: read_only
+  expect:
+  - {type: url, path: default.asp}
+- id: s02_click_link_member_inquiry
+  intent: Click link &#x27;Member Inquiry&#x27; (menu frame)
+  action:
+    type: click
+    target:
+      description: link &#x27;Member Inquiry&#x27; (menu frame)
+      frame: {name: menu}
+      role: link
+      locators:
+      - {by: attribute, tag: a, attribute: href, value: mbrinq.asp}
+      - {by: role, role: link, name: Member Inquiry}
+      - {by: css, selector: &#x27;body &gt; table &gt; tbody &gt; tr:nth-of-type(3) &gt; td &gt; a&#x27;}
+  risk: reversible
+  expect:
+  - {type: url, frame: main, path: mbrinq.asp}
+  - {type: text, text: MEMBER INQUIRY, frame: main}
+- id: s03_fill_member_number_textbox
+  intent: Enter {{inputs.member_id}} in &#x27;Member Number&#x27; textbox (main frame)
+  action:
+    type: fill
+    target:
+      description: &#x27;&#x27;&#x27;Member Number&#x27;&#x27; textbox (main frame)&#x27;
+      frame: {name: main}
+      role: textbox
+      locators:
+      - {by: attribute, tag: input, attribute: name, value: MBRNO}
+      - {by: label, role: textbox, label: Member Number}
+      - {by: css, selector: &#x27;body &gt; form &gt; table &gt; tbody &gt; tr:nth-of-type(1) &gt; td:nth-of-type(2) &gt; input&#x27;}
+    value: &#x27;{{inputs.member_id}}&#x27;
+  risk: reversible
+- id: s04_click_button_search
+  intent: Click button &#x27;Search&#x27; (main frame)
+  action:
+    type: click
+    target:
+      description: button &#x27;Search&#x27; (main frame)
+      frame: {name: main}
+      role: button
+      locators:
+      - {by: attribute, tag: input, attribute: name, value: SRCH}
+      - {by: role, role: button, name: Search}
+      - by: css
+        selector: body &gt; form &gt; table &gt; tbody &gt; tr:nth-of-type(3) &gt; td:nth-of-type(2) &gt; input:nth-of-type(1)
+  risk: reversible
+  expect:
+  - type: url
+    frame: main
+    path: mbrlist.asp
+    query: {MBRNO: &#x27;{{inputs.member_id}}&#x27;}
+  - {type: text, text: MEMBER INQUIRY - RESULTS, frame: main}
+- id: s05_click_link_member_id
+  intent: Click link &#x27;{{inputs.member_id}}&#x27; (main frame)
+  action:
+    type: click
+    target:
+      description: link &#x27;{{inputs.member_id}}&#x27; (main frame)
+      frame: {name: main}
+      role: link
+      locators:
+      - {by: role, role: link, name: &#x27;{{inputs.member_id}}&#x27;}
+      - {by: table_cell, row: &#x27;{{inputs.member_id}}&#x27;, column: &#x27;MBR #&#x27;, role: link}
+      - by: css
+        selector: body &gt; table:nth-of-type(2) &gt; tbody &gt; tr:nth-of-type(2) &gt; td:nth-of-type(1) &gt; a
+  risk: reversible
+  expect:
+  - type: url
+    frame: main
+    path: mbrdtl.asp
+    query: {M: &#x27;{{inputs.member_id}}&#x27;}
+  - {type: text, text: MEMBER DETAIL, frame: main}
+- id: s06_read_savings_balance
+  intent: Read savings_balance from cell in column &#x27;CURRENT BALANCE&#x27;, row &#x27;SHARE SAVINGS&#x27; (main frame)
+  action:
+    type: extract
+    target:
+      description: cell in column &#x27;CURRENT BALANCE&#x27;, row &#x27;SHARE SAVINGS&#x27; (main frame)
+      frame: {name: main}
+      role: cell
+      locators:
+      - {by: table_cell, row: SHARE SAVINGS, column: CURRENT BALANCE}
+    output: savings_balance
+  risk: read_only
+- id: s07_read_member_name
+  intent: Read member_name from &#x27;NAME&#x27; cell (main frame)
+  action:
+    type: extract
+    target:
+      description: &#x27;&#x27;&#x27;NAME&#x27;&#x27; cell (main frame)&#x27;
+      frame: {name: main}
+      role: cell
+      locators:
+      - {by: label, role: cell, label: NAME}
+    output: member_name
+  risk: read_only
+success:
+  description: &#x27;&#x27;&#x27;MEMBER DETAIL&#x27;&#x27; is shown and every output was read&#x27;
+  all_of:
+  - type: url
+    frame: main
+    path: mbrdtl.asp
+    query: {M: &#x27;{{inputs.member_id}}&#x27;}
+  - {type: text, text: MEMBER DETAIL, frame: main}
+  - {type: output, name: savings_balance}
+  - {type: output, name: member_name}
+provenance:
+  method: discovery
+  recorded_at: &#x27;2026-10-01T04:31:46.547736Z&#x27;
+  source_run: 20261001T043137Z-discovery-legacycore-member-get-savings-balance-a71e
+  model: scripted
+  goal: Look up member {{inputs.member_id}} and read their current share savings balance and the member&#x27;s name
+  tenant: acme
+  product_version: 4.2.1
+</pre><h2>Raw</h2><details><summary>result.json</summary><pre>{
+  &quot;run_id&quot;: &quot;20261001T043137Z-discovery-legacycore-member-get-savings-balance-a71e&quot;,
+  &quot;status&quot;: &quot;succeeded&quot;,
+  &quot;goal&quot;: &quot;Look up member {{inputs.member_id}} and read their current share savings balance and the member&#x27;s name&quot;,
+  &quot;capability&quot;: &quot;legacycore.member.get_savings_balance@1.0.0&quot;,
+  &quot;artifact_path&quot;: &quot;capabilities/legacycore/legacycore.member.get_savings_balance@1.0.0.yaml&quot;,
+  &quot;outcome&quot;: null,
+  &quot;failure&quot;: null,
+  &quot;turns&quot;: 8,
+  &quot;actions&quot;: 4,
+  &quot;interventions&quot;: [],
+  &quot;usage&quot;: {
+    &quot;input_tokens&quot;: 0,
+    &quot;output_tokens&quot;: 0,
+    &quot;cache_read_input_tokens&quot;: 0,
+    &quot;cache_creation_input_tokens&quot;: 0
+  },
+  &quot;estimated_cost_usd&quot;: 0.0,
+  &quot;model&quot;: &quot;scripted&quot;,
+  &quot;duration_ms&quot;: 9253,
+  &quot;evidence_dir&quot;: &quot;runs/20261001T043137Z-discovery-legacycore-member-get-savings-balance-a71e&quot;
+}</pre></details></main></body></html>

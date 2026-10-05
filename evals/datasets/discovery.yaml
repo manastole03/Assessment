@@ -1,0 +1,55 @@
+# yaml-language-server: $schema=../../schemas/eval-dataset.schema.json
+# Discovery: the agent drives the real UI once, and what it records is graded — its contract, whether
+# it is free of data, whether it replays on inputs and tenants it never saw, and (live) a model-graded
+# rubric of its contract. Offline, scripted plans stand in for the model so the harness itself is
+# covered in CI; `rote eval run discovery --live` measures the model.
+schema: rote.eval/v1
+id: discovery
+kind: discovery
+title: Discovery agent
+description: >-
+  Goals in plain language become artifacts that generalise. Each recording is replayed on held-out
+  members and on a second tenant; the contract is graded by code and, in live mode, by a rubric.
+library: session
+threshold: 1.0
+cases:
+  - id: sign-on
+    title: Record the sign-on session capability from scratch
+    tags: [session]
+    library: app
+    goal: Sign on to LegacyCore with the operator's service account
+    kind: session
+    capability_id: legacycore.session.sign_on
+    standin: sign_on
+    expect:
+      status: succeeded
+      inputs: []
+      outputs: {}
+      max_turns: 15
+      max_cost_usd: 2.0
+
+  - id: savings-balance
+    title: Look up a member and read their savings balance and name
+    tags: [task, generalisation]
+    goal: Look up member 12345 and read their current share savings balance and the member's name
+    capability_id: legacycore.member.get_savings_balance
+    inputs: {member_id: "12345"}
+    standin: savings_balance
+    rubric: true
+    expect:
+      status: succeeded
+      inputs: [member_id]
+      outputs: {savings_balance: money, member_name: string}
+      sensitive: [member_id, member_name]
+      max_turns: 25
+      max_cost_usd: 5.0
+    holdout:
+      - title: the recorded member again
+        inputs: {member_id: "12345"}
+        expect: {status: succeeded, outputs: {savings_balance: "2418.07", member_name: "SAMPLE, JORDAN Q"}}
+      - title: unseen member, rows re-ordered
+        inputs: {member_id: "20417"}
+        expect: {status: succeeded, outputs: {savings_balance: "15002.50", member_name: "RIVERA, ALEX M"}}
+      - title: unseen member without savings fails loudly, never with a wrong number
+        inputs: {member_id: "31008"}
+        expect: {status: failed}

@@ -1,0 +1,113 @@
+# yaml-language-server: $schema=../../schemas/eval-dataset.schema.json
+# Deterministic replay: the approved capability against the bundled LegacyCore mock.
+# No model is involved, so the gate is 100% — any failing case is a regression in the engine,
+# the artifact or the tenant configuration. Run: `rote eval run replay` (add --trials 3 to check determinism).
+schema: rote.eval/v1
+id: replay
+kind: replay
+title: Deterministic replay
+description: >-
+  The approved savings-balance capability on both tenants: happy paths, business outcomes, caller
+  errors, runtime recoveries, slow pages, drift and hard failures. Every case must pass on every trial.
+capability: legacycore.member.get_savings_balance
+threshold: 1.0
+cases:
+  - id: happy-path
+    title: Read the savings balance and member name
+    tags: [happy-path]
+    inputs: {member_id: "12345"}
+    expect:
+      status: succeeded
+      outputs: {savings_balance: "2418.07", member_name: "SAMPLE, JORDAN Q"}
+      warnings: []
+      max_duration_ms: 10000
+
+  - id: reordered-rows
+    title: Another member whose share rows are in a different order
+    tags: [happy-path, generalisation]
+    inputs: {member_id: "20417"}
+    expect:
+      status: succeeded
+      outputs: {savings_balance: "15002.50", member_name: "RIVERA, ALEX M"}
+      warnings: []
+
+  - id: member-not-found
+    title: No member has that number
+    tags: [business-outcome]
+    inputs: {member_id: "99999"}
+    expect: {status: business_outcome, outcome: MEMBER_NOT_FOUND}
+
+  - id: restricted-account
+    title: Employee account the operator may not view
+    tags: [business-outcome]
+    inputs: {member_id: "40404"}
+    expect: {status: business_outcome, outcome: ACCESS_RESTRICTED}
+
+  - id: no-savings-share
+    title: Member without a share savings account
+    tags: [business-outcome]
+    inputs: {member_id: "31008"}
+    expect: {status: business_outcome, outcome: NO_SAVINGS_ACCOUNT}
+
+  - id: invalid-input
+    title: Malformed member number is rejected before touching the UI
+    tags: [caller-error]
+    inputs: {member_id: "12-AB"}
+    expect: {status: failed, failure: [INVALID_INPUT], max_duration_ms: 2000}
+
+  - id: runtime-recoveries
+    title: HTTP 503, maintenance interstitial, native dialog and session expiry, all recovered
+    tags: [recovery]
+    inputs: {member_id: "12345"}
+    faults: {maintenance_notice: true, session_warning_dialog: true, transient_errors: 1, session_expire_after: 4}
+    expect:
+      status: succeeded
+      outputs: {savings_balance: "2418.07"}
+      recoveries: [service_unavailable, maintenance_notice, session_warning_dialog, session_expired]
+
+  - id: slow-pages
+    title: Every page 2.5 s slower — absorbed by condition-based waits, not "recovered"
+    tags: [recovery]
+    inputs: {member_id: "12345"}
+    faults: {slow_ms: 2500}
+    expect: {status: succeeded, outputs: {savings_balance: "2418.07"}, warnings: []}
+
+  - id: vendor-redesign
+    title: Unannounced vendor redesign fails loudly with evidence
+    tags: [hard-failure]
+    inputs: {member_id: "12345"}
+    faults: {vendor_upgrade: true}
+    expect: {status: failed, failure: [TARGET_NOT_FOUND, UNEXPECTED_STATE]}
+
+  - id: unknown-screen
+    title: An attestation screen nobody automated stops the run instead of guessing
+    tags: [hard-failure, escalation]
+    inputs: {member_id: "12345"}
+    faults: {compliance_popup: true}
+    expect: {status: failed, failure: [UNEXPECTED_STATE, TARGET_NOT_FOUND]}
+
+  - id: bayview-with-override
+    title: Same artifact on another institution, with its reviewed override
+    tags: [multi-tenant]
+    tenant: bayview
+    inputs: {member_id: "20417"}
+    expect:
+      status: succeeded
+      outputs: {savings_balance: "15002.50"}
+      recoveries: [daily_security_notice]
+      warnings: [LOCATOR_DRIFT]
+
+  - id: bayview-without-override
+    title: Without the override, the unsafe read is refused rather than guessed
+    tags: [multi-tenant, hard-failure]
+    tenant: bayview
+    tenant_overrides: false
+    inputs: {member_id: "20417"}
+    expect: {status: failed, failure: [TARGET_NOT_FOUND], warnings: [LOCATOR_DRIFT]}
+
+  - id: bayview-no-savings
+    title: The override flows into the probed handler on the other tenant
+    tags: [multi-tenant, business-outcome]
+    tenant: bayview
+    inputs: {member_id: "31008"}
+    expect: {status: business_outcome, outcome: NO_SAVINGS_ACCOUNT, warnings: [LOCATOR_DRIFT]}

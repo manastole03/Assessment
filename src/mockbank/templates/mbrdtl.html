@@ -1,0 +1,23 @@
+{% extends "_page.html" %}
+{% block body %}
+<table width="100%" cellpadding="3" cellspacing="0"><tr><td class="bar">MEMBER DETAIL</td></tr></table>
+<br>
+{% if m.restricted %}
+<table border="0" cellpadding="3" cellspacing="0"><tr><td class="lbl">MEMBER NUMBER:</td><td>{{ m.number }}</td></tr></table>
+<br><span class="err">ACCESS DENIED - RESTRICTED ACCOUNT. SUPERVISOR OVERRIDE REQUIRED.</span>
+<br><br><a href="mbrinq.asp">New Search</a>
+{% else %}
+<table border="0" cellpadding="3" cellspacing="0">
+<tr><td class="lbl">MEMBER NUMBER:</td><td>{{ m.number }}</td><td width="24"></td><td class="lbl">BRANCH:</td><td>{{ m.branch }}</td></tr>
+<tr><td class="lbl">NAME:</td><td>{{ m.name }}</td><td></td><td class="lbl">MEMBER SINCE:</td><td>{{ m.since }}</td></tr>
+<tr><td class="lbl">SSN:</td><td>{{ m.ssn }}</td><td></td><td class="lbl">DATE OF BIRTH:</td><td>{{ m.dob }}</td></tr>
+<tr><td class="lbl">PHONE:</td><td>{{ m.phone }}</td><td></td><td class="lbl">EMAIL:</td><td>{{ m.email }}</td></tr>
+</table>
+<br><b>SHARES / LOANS</b>
+<table class="grid" border="1" cellspacing="0" cellpadding="3" width="600">
+<tr><th>SFX</th><th>DESCRIPTION</th><th>{{ t.labels.balance_col|upper }}</th><th>{{ t.labels.available_col|upper }}</th><th>STATUS</th></tr>
+{% for s in shares %}<tr><td>{{ s.suffix }}</td><td>{{ s.description }}</td><td align="right">{{ s.balance }}</td><td align="right">{{ s.available }}</td><td>{{ s.status }}</td></tr>
+{% endfor %}</table>
+<br><a href="newshr.asp?M={{ m.number }}&tok={{ tok }}">Open New Share</a> &nbsp;|&nbsp; <a href="mbrinq.asp">New Search</a>
+{% endif %}
+{% endblock %}

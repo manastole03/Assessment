@@ -1,0 +1,20 @@
+[
+  {
+    "name": "legacycore__member__get_savings_balance",
+    "description": "Get a member's savings balance. Looks up a member by member number and reads the current balance of their share savings account and the member's name. Returns status 'succeeded' with outputs: savings_balance (money), member_name (string); or status 'business_outcome' with one of: ACCESS_RESTRICTED, MEMBER_NOT_FOUND, NO_SAVINGS_ACCOUNT; or status 'failed' with a failure code and whether retrying can help. Side effects: reversible. Version 1.0.3.",
+    "input_schema": {
+      "type": "object",
+      "properties": {
+        "member_id": {
+          "type": "string",
+          "description": "Member number",
+          "pattern": "^[0-9]{5,10}$"
+        }
+      },
+      "required": [
+        "member_id"
+      ],
+      "additionalProperties": false
+    }
+  }
+]

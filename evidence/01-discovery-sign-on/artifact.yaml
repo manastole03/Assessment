@@ -1,0 +1,80 @@
+schema: rote.capability/v1
+id: legacycore.session.sign_on
+version: 1.0.0
+kind: session
+title: Sign on to LegacyCore
+description: Signs on with the service account so other capabilities start from the home screen.
+status: draft
+app: {id: legacycore, surface: web, product_versions: '>=4.2.0,<5.0.0'}
+idempotent: true
+side_effects: reversible
+secrets:
+  password: {description: password for the legacycore service account}
+  username: {description: username for the legacycore service account}
+steps:
+- id: s01_open_signon_asp
+  intent: Open signon.asp
+  action: {type: navigate, url: '{{app.base_url}}/signon.asp'}
+  risk: read_only
+  expect:
+  - {type: url, path: signon.asp}
+- id: s02_fill_user_id_textbox
+  intent: Enter {{secrets.username}} in 'User ID' textbox
+  action:
+    type: fill
+    target:
+      description: '''User ID'' textbox'
+      role: textbox
+      locators:
+      - {by: attribute, tag: input, attribute: name, value: USRID}
+      - {by: label, role: textbox, label: User ID}
+      - by: css
+        selector: body > table > tbody > tr > td > form > table > tbody > tr > td > table > tbody > tr:nth-of-type(3)
+          > td:nth-of-type(2) > input
+    value: '{{secrets.username}}'
+  risk: reversible
+- id: s03_fill_password_textbox
+  intent: Enter {{secrets.password}} in 'Password' textbox
+  action:
+    type: fill
+    target:
+      description: '''Password'' textbox'
+      role: textbox
+      locators:
+      - {by: attribute, tag: input, attribute: name, value: PSWD}
+      - {by: label, role: textbox, label: Password}
+      - by: css
+        selector: body > table > tbody > tr > td > form > table > tbody > tr > td > table > tbody > tr:nth-of-type(4)
+          > td:nth-of-type(2) > input
+    value: '{{secrets.password}}'
+  risk: reversible
+- id: s04_click_button_sign_on
+  intent: Click button 'Sign On'
+  action:
+    type: click
+    target:
+      description: button 'Sign On'
+      role: button
+      locators:
+      - {by: attribute, tag: input, attribute: name, value: BTNSO}
+      - {by: role, role: button, name: Sign On}
+      - by: css
+        selector: body > table > tbody > tr > td > form > table > tbody > tr > td > table > tbody > tr:nth-of-type(5)
+          > td:nth-of-type(2) > input
+  risk: reversible
+  expect:
+  - {type: url, path: default.asp}
+  - {type: text, text: FUNCTIONS, frame: menu}
+success:
+  description: '''FUNCTIONS'' is shown'
+  all_of:
+  - {type: url, frame: menu, path: menu.asp}
+  - {type: text, text: FUNCTIONS, frame: menu}
+provenance:
+  method: discovery
+  recorded_at: '2026-10-01T04:31:36.820782Z'
+  source_run: 20261001T043129Z-discovery-legacycore-session-sign-on-f759
+  model: scripted
+  goal: Sign on to LegacyCore with the operator's service account
+  tenant: acme
+  product_version: 4.2.1

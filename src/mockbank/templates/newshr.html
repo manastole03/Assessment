@@ -1,0 +1,23 @@
+{% extends "_page.html" %}
+{% block body %}
+<table width="100%" cellpadding="3" cellspacing="0"><tr><td class="bar">OPEN NEW SHARE - MEMBER {{ m.number }}</td></tr></table>
+<br>
+{% if error %}<span class="err">{{ error }}</span><br><br>{% endif %}
+<form name="frmNewShr" method="post" action="newshr_confirm.asp">
+<input type="hidden" name="M" value="{{ m.number }}">
+<table border="0" cellpadding="3" cellspacing="0">
+<tr><td>Share Type:</td><td><select name="SHRTYP">
+  <option value="">-- SELECT --</option>
+  {% for code, label in share_types %}<option value="{{ code }}"{% if form.SHRTYP == code %} selected{% endif %}>{{ code }} - {{ label }}</option>
+  {% endfor %}</select></td></tr>
+<tr><td>Nickname:</td><td><input type="text" name="NICK" size="20" maxlength="20" value="{{ form.NICK }}"></td></tr>
+<tr><td>Opening Deposit:</td><td><input type="text" name="OPNAMT" size="10" value="{{ form.OPNAMT }}"></td></tr>
+<tr><td>Funding Source:</td><td><select name="FUNDSRC">
+  <option value="">-- SELECT --</option>
+  {% for code, label in funding %}<option value="{{ code }}"{% if form.FUNDSRC == code %} selected{% endif %}>{{ label }}</option>
+  {% endfor %}</select></td></tr>
+<tr><td></td><td><input type="submit" name="BTNCONT" value="Continue">
+<input type="button" value="Cancel" onclick="location.href='mbrdtl.asp?M={{ m.number }}'"></td></tr>
+</table>
+</form>
+{% endblock %}

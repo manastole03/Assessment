@@ -1,0 +1,12 @@
+# Reference tenant: capabilities are discovered here, then shared with every tenant on the same product.
+schema: rote.tenant/v1
+id: acme
+name: Acme Federal Credit Union
+apps:
+  legacycore:
+    base_url: http://127.0.0.1:8600/acme
+    product_version: 4.2.1
+    secrets:
+      username: env:ACME_LEGACYCORE_USERNAME
+      password: env:ACME_LEGACYCORE_PASSWORD
+    overrides: []

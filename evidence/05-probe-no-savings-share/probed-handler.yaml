@@ -1,0 +1,11 @@
+id: no_savings_account
+description: The member has no share savings account.
+kind: business_outcome
+when:
+- {type: text, text: SHARES / LOANS, frame: main}
+- {type: step_target, step: s06_read_savings_balance, part: anchor}
+unless:
+- {type: step_target, step: s06_read_savings_balance, part: element}
+scope:
+- s06_read_savings_balance
+outcome: {code: NO_SAVINGS_ACCOUNT, message: The member has no share savings account.}

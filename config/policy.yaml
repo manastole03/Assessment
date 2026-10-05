@@ -1,0 +1,41 @@
+# Guardrail policy. Enforced at the network layer (request interception), per action (discovery and
+# replay) and per artifact (before a replay starts). See src/rote/policy/policy.py.
+schema: rote.policy/v1
+id: default
+
+# Origins automation may reach at all. Anything else is aborted by the browser context.
+allowed_origins:
+  - http://127.0.0.1:8600
+  - http://localhost:8600
+blocked_url_patterns:
+  - "/__admin/"            # the mock's fault-injection API is never a valid automation target
+
+discovery:
+  allowed_actions: [navigate, click, fill, select, press, extract, dialog]
+  irreversible: escalate   # the model never commits on its own; a human approves or the action is refused
+
+replay:
+  allowed_actions: [navigate, click, fill, select, press, extract, dialog]
+  irreversible: confirm    # approved capabilities only, and an operator confirms each run (maker-checker)
+  require_approved: true   # drafts need --allow-draft (supervised trial runs)
+
+# Matched against a control's accessible name, visual label and button value.
+risk_rules:
+  - risk: irreversible
+    roles: [button, link]
+    name_pattern: "\\b(post|submit payment|transfer|wire|disburse|approve|delete|remove|close account|charge.?off|reverse|void|open account now)\\b"
+    reason: commits a financial or record-changing transaction
+
+# Controls automation must never touch, in any phase.
+blocked_targets:
+  - name_pattern: "\\b(change password|reset password|user admin|security settings|override)\\b"
+    reason: credential and security administration is out of scope for automation
+
+# Values next to these labels are masked in screenshots and redacted in text, whatever their format.
+sensitive_labels:
+  - "\\bssn\\b"
+  - "social security"
+  - "date of birth|\\bdob\\b|birth ?date"
+  - "tax ?id|\\btin\\b"
+  - "password|\\bpin\\b"
+  - "card number|\\bpan\\b"

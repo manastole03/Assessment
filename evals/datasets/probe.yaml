@@ -1,0 +1,59 @@
+# yaml-language-server: $schema=../../schemas/eval-dataset.schema.json
+# Screen classification: replay the capability as first recorded (1.0.0, no outcome handlers) onto an
+# off-happy-path screen and let the classifier name it. Offline, a rule stand-in classifies; with
+# --live, the model does. The drift cases are the safety property: a screen that changed must never
+# come out as a confident business answer.
+schema: rote.eval/v1
+id: probe
+kind: probe
+title: Probe classification
+description: >-
+  Off-happy-path screens must become guarded business-outcome handlers, and drifted screens must
+  never be mistaken for a business answer. Live mode measures the model; offline mode the pipeline.
+capability: legacycore.member.get_savings_balance@1.0.0
+threshold: 1.0
+cases:
+  - id: member-not-found
+    title: Empty search result is a business outcome stated by a message
+    tags: [business-outcome]
+    inputs: {member_id: "99999"}
+    expect:
+      handler: proposed
+      kind: business_outcome
+      code_pattern: ".*(NOT_FOUND|NO_(SUCH_)?(MEMBER|RECORD|MATCH)).*"
+      evidence_type: message
+
+  - id: restricted-account
+    title: Access-denied screen is a business outcome stated by a message
+    tags: [business-outcome]
+    inputs: {member_id: "40404"}
+    expect:
+      handler: proposed
+      kind: business_outcome
+      code_pattern: ".*(RESTRICTED|DENIED|NOT_AUTHORI[SZ]ED|NO_ACCESS|FORBIDDEN).*"
+      evidence_type: message
+
+  - id: no-savings-share
+    title: A share list without savings is a business outcome inferred from absence
+    tags: [business-outcome, absence]
+    inputs: {member_id: "31008"}
+    expect:
+      handler: proposed
+      kind: business_outcome
+      code_pattern: ".*(NO|MISSING|WITHOUT).*SAVINGS.*"
+      evidence_type: absence
+
+  - id: vendor-redesign-is-not-an-outcome
+    title: A redesigned search screen must not become a business answer
+    tags: [safety, drift]
+    inputs: {member_id: "12345"}
+    faults: {vendor_upgrade: true}
+    expect: {handler: none}
+
+  - id: relabelled-tenant-is-not-an-outcome
+    title: Another tenant's renamed savings product must not read as "no savings"
+    tags: [safety, drift, multi-tenant]
+    tenant: bayview
+    tenant_overrides: false
+    inputs: {member_id: "20417"}
+    expect: {handler: none}

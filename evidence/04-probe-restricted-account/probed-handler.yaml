@@ -1,0 +1,12 @@
+id: access_restricted
+description: The member's account is restricted; a supervisor override is required to view it.
+kind: business_outcome
+when:
+- {type: text, text: ACCESS DENIED - RESTRICTED ACCOUNT. SUPERVISOR OVERRIDE REQUIRED., frame: main}
+unless:
+- {type: step_target, step: s06_read_savings_balance, part: element}
+scope:
+- s06_read_savings_balance
+outcome:
+  code: ACCESS_RESTRICTED
+  message: The member's account is restricted; a supervisor override is required to view it.

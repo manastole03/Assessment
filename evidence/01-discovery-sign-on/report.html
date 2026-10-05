@@ -1,0 +1,127 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1"><title>Run report</title><style>
+:root{--bg:#fbfbf9;--fg:#1d1d1b;--muted:#6b6b66;--line:#e4e3dc;--card:#fff;--ok:#1f7a4d;--warn:#a86a00;
+--bad:#b3261e;--biz:#7a3fa0;--info:#1f5fa8}
+@media (prefers-color-scheme:dark){:root{--bg:#161614;--fg:#ecebe6;--muted:#9c9b94;--line:#2e2d29;--card:#1e1e1b}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font:14px/1.5 ui-sans-serif,system-ui,-apple-system,Segoe UI,sans-serif}
+main{max-width:1100px;margin:0 auto;padding:24px 16px 64px}h1{font-size:20px;margin:0 0 4px}h2{font-size:15px;margin:28px 0 8px}
+.meta{color:var(--muted);font-size:13px}.pill{display:inline-block;padding:1px 8px;border-radius:999px;font-size:12px;font-weight:600;color:#fff}
+.succeeded{background:var(--ok)}.failed{background:var(--bad)}.business_outcome{background:var(--biz)}.unknown{background:var(--muted)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px 16px;margin-top:14px}
+dl{display:grid;grid-template-columns:max-content 1fr;gap:6px 16px;margin:0}dt{color:var(--muted)}dd{margin:0;word-break:break-word}
+table{width:100%;border-collapse:collapse;background:var(--card);border:1px solid var(--line);border-radius:8px;overflow:hidden}
+td{padding:6px 10px;border-top:1px solid var(--line);vertical-align:top}td.t{color:var(--muted);white-space:nowrap;width:70px;font-variant-numeric:tabular-nums}
+td.k{white-space:nowrap;width:190px;font-family:ui-monospace,Menlo,monospace;font-size:12px}
+.k.step{color:var(--info)}.k.handler,.k.recovery{color:var(--warn)}.k.intervention,.k.human,.k.control{color:var(--biz)}.k.run,.k.discovery{font-weight:700}
+.k.policy,.k.failure{color:var(--bad)}.k.agent{color:var(--info)}.k.locator{color:var(--warn)}
+pre{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:12px;overflow:auto;font-size:12px;white-space:pre-wrap}
+img.shot{max-width:320px;border:1px solid var(--line);border-radius:4px;display:block;margin-top:6px;cursor:zoom-in}
+img.shot.big{max-width:100%}.detail{color:var(--muted);font-size:12px;word-break:break-word}.detail b{color:var(--fg)}
+ul{margin:4px 0;padding-left:18px}code{font-family:ui-monospace,Menlo,monospace;font-size:12px}
+</style></head>
+<body><main><h1>Sign on to LegacyCore with the operator&#x27;s service account</h1>
+<div class="meta"><span class="pill succeeded">succeeded</span> · discovery
+ · run <code>20261001T043129Z-discovery-legacycore-session-sign-on-f759</code> · 26 events</div>
+<div class="card"><dl><dt>capability</dt><dd><code>legacycore.session.sign_on@1.0.0</code></dd><dt>model</dt><dd>scripted</dd><dt>turns</dt><dd>5</dd><dt>actions</dt><dd>3</dd><dt>estimated_cost_usd</dt><dd>0.0</dd></dl></div>
+<h2>Timeline</h2><table><tr><td class="t">0.3s</td><td class="k console">console.started</td><td class="detail"><b>url</b>: http://127.0.0.1:8765</td></tr><tr><td class="t">0.3s</td><td class="k run">run.started</td><td class="detail"><b>kind</b>: discovery · <b>run_id</b>: 20261001T043129Z-discovery-legacycore-session-sign-on-f759 · <b>subject</b>: Sign on to LegacyCore with the operator&#x27;s service account · <b>model</b>: scripted · <b>tenant</b>: acme · <b>evidence_dir</b>: runs/20261001T043129Z-discovery-legacycore-session-sign-on-f759 · <b>inputs</b>: []</td></tr><tr><td class="t">2.0s</td><td class="k evidence">evidence.captured</td><td class="detail"><b>turn-00</b><img class="shot" loading="lazy" src="screens/0003-turn-00.jpg" onclick="this.classList.toggle('big')"></td></tr><tr><td class="t">2.0s</td><td class="k agent">agent.action</td><td class="detail"><b>tool</b>: define_capability · <b>summary</b>: id=legacycore.session.sign_on, title=Sign on to LegacyCore, description=Signs on with the service account so other capabilities start from the home screen., inputs=[], outputs=[] · <b>rationale</b>: scripted</td></tr><tr><td class="t">2.0s</td><td class="k agent">agent.action_result</td><td class="detail"><b>ok</b>: True · <b>message</b>: capability legacycore.session.sign_on declared with inputs [] and outputs []</td></tr><tr><td class="t">2.0s</td><td class="k agent">agent.action</td><td class="detail"><b>tool</b>: fill · <b>summary</b>: ref=e4, secret=username, target=textbox (label &#x27;User ID&#x27;) · <b>rationale</b>: scripted</td></tr><tr><td class="t">2.0s</td><td class="k policy">policy.decision</td><td class="detail"><b>verdict</b>: allow · <b>risk</b>: reversible · <b>reason</b>: edits unsaved form state</td></tr><tr><td class="t">2.1s</td><td class="k agent">agent.action_result</td><td class="detail"><b>ok</b>: True · <b>message</b>: entered {{secrets.username}} in textbox (label &#x27;User ID&#x27;)</td></tr><tr><td class="t">3.8s</td><td class="k evidence">evidence.captured</td><td class="detail"><b>turn-02</b><img class="shot" loading="lazy" src="screens/0011-turn-02.jpg" onclick="this.classList.toggle('big')"></td></tr><tr><td class="t">3.8s</td><td class="k agent">agent.action</td><td class="detail"><b>tool</b>: fill · <b>summary</b>: ref=e6, secret=password, target=textbox (label &#x27;Password&#x27;) · <b>rationale</b>: scripted</td></tr><tr><td class="t">3.8s</td><td class="k policy">policy.decision</td><td class="detail"><b>verdict</b>: allow · <b>risk</b>: reversible · <b>reason</b>: edits unsaved form state</td></tr><tr><td class="t">3.9s</td><td class="k agent">agent.action_result</td><td class="detail"><b>ok</b>: True · <b>message</b>: entered {{secrets.password}} in textbox (label &#x27;Password&#x27;)</td></tr><tr><td class="t">5.5s</td><td class="k evidence">evidence.captured</td><td class="detail"><b>turn-03</b><img class="shot" loading="lazy" src="screens/0016-turn-03.jpg" onclick="this.classList.toggle('big')"></td></tr><tr><td class="t">5.5s</td><td class="k agent">agent.action</td><td class="detail"><b>tool</b>: click · <b>summary</b>: ref=e7, target=button &#x27;Sign On&#x27; · <b>rationale</b>: scripted</td></tr><tr><td class="t">5.5s</td><td class="k policy">policy.decision</td><td class="detail"><b>verdict</b>: allow · <b>risk</b>: reversible · <b>reason</b>: navigates or submits without a commit keyword</td></tr><tr><td class="t">5.7s</td><td class="k agent">agent.action_result</td><td class="detail"><b>ok</b>: True · <b>message</b>: clicked button &#x27;Sign On&#x27;</td></tr><tr><td class="t">7.4s</td><td class="k evidence">evidence.captured</td><td class="detail"><b>turn-04</b><img class="shot" loading="lazy" src="screens/0021-turn-04.jpg" onclick="this.classList.toggle('big')"></td></tr><tr><td class="t">7.4s</td><td class="k agent">agent.action</td><td class="detail"><b>tool</b>: finish · <b>summary</b>: summary=signed on, success_text=FUNCTIONS · <b>rationale</b>: scripted</td></tr><tr><td class="t">7.4s</td><td class="k artifact">artifact.recorded</td><td class="detail"><b>capability</b>: legacycore.session.sign_on@1.0.0 · <b>steps</b>: 4 · <b>path</b>: capabilities/legacycore/legacycore.session.sign_on@1.0.0.yaml · <b>summary</b>: signed on</td></tr><tr><td class="t">7.4s</td><td class="k agent">agent.action_result</td><td class="detail"><b>ok</b>: True · <b>message</b>: recorded legacycore.session.sign_on@1.0.0</td></tr><tr><td class="t">7.4s</td><td class="k discovery">discovery.finished</td><td class="detail"><b>status</b>: succeeded · <b>capability</b>: legacycore.session.sign_on@1.0.0 · <b>failure</b>: None · <b>turns</b>: 5 · <b>usage</b>: {&quot;input_tokens&quot;: 0, &quot;output_tokens&quot;: 0, &quot;cache_read_input_tokens&quot;: 0, &quot;cache_creation_input_tokens&quot;: 0} · <b>estimated_cost_usd</b>: 0.0</td></tr></table><h2>artifact.yaml</h2><pre>schema: rote.capability/v1
+id: legacycore.session.sign_on
+version: 1.0.0
+kind: session
+title: Sign on to LegacyCore
+description: Signs on with the service account so other capabilities start from the home screen.
+status: draft
+app: {id: legacycore, surface: web, product_versions: &#x27;&gt;=4.2.0,&lt;5.0.0&#x27;}
+idempotent: true
+side_effects: reversible
+secrets:
+  password: {description: password for the legacycore service account}
+  username: {description: username for the legacycore service account}
+steps:
+- id: s01_open_signon_asp
+  intent: Open signon.asp
+  action: {type: navigate, url: &#x27;{{app.base_url}}/signon.asp&#x27;}
+  risk: read_only
+  expect:
+  - {type: url, path: signon.asp}
+- id: s02_fill_user_id_textbox
+  intent: Enter {{secrets.username}} in &#x27;User ID&#x27; textbox
+  action:
+    type: fill
+    target:
+      description: &#x27;&#x27;&#x27;User ID&#x27;&#x27; textbox&#x27;
+      role: textbox
+      locators:
+      - {by: attribute, tag: input, attribute: name, value: USRID}
+      - {by: label, role: textbox, label: User ID}
+      - by: css
+        selector: body &gt; table &gt; tbody &gt; tr &gt; td &gt; form &gt; table &gt; tbody &gt; tr &gt; td &gt; table &gt; tbody &gt; tr:nth-of-type(3)
+          &gt; td:nth-of-type(2) &gt; input
+    value: &#x27;{{secrets.username}}&#x27;
+  risk: reversible
+- id: s03_fill_password_textbox
+  intent: Enter {{secrets.password}} in &#x27;Password&#x27; textbox
+  action:
+    type: fill
+    target:
+      description: &#x27;&#x27;&#x27;Password&#x27;&#x27; textbox&#x27;
+      role: textbox
+      locators:
+      - {by: attribute, tag: input, attribute: name, value: PSWD}
+      - {by: label, role: textbox, label: Password}
+      - by: css
+        selector: body &gt; table &gt; tbody &gt; tr &gt; td &gt; form &gt; table &gt; tbody &gt; tr &gt; td &gt; table &gt; tbody &gt; tr:nth-of-type(4)
+          &gt; td:nth-of-type(2) &gt; input
+    value: &#x27;{{secrets.password}}&#x27;
+  risk: reversible
+- id: s04_click_button_sign_on
+  intent: Click button &#x27;Sign On&#x27;
+  action:
+    type: click
+    target:
+      description: button &#x27;Sign On&#x27;
+      role: button
+      locators:
+      - {by: attribute, tag: input, attribute: name, value: BTNSO}
+      - {by: role, role: button, name: Sign On}
+      - by: css
+        selector: body &gt; table &gt; tbody &gt; tr &gt; td &gt; form &gt; table &gt; tbody &gt; tr &gt; td &gt; table &gt; tbody &gt; tr:nth-of-type(5)
+          &gt; td:nth-of-type(2) &gt; input
+  risk: reversible
+  expect:
+  - {type: url, path: default.asp}
+  - {type: text, text: FUNCTIONS, frame: menu}
+success:
+  description: &#x27;&#x27;&#x27;FUNCTIONS&#x27;&#x27; is shown&#x27;
+  all_of:
+  - {type: url, frame: menu, path: menu.asp}
+  - {type: text, text: FUNCTIONS, frame: menu}
+provenance:
+  method: discovery
+  recorded_at: &#x27;2026-10-01T04:31:36.820782Z&#x27;
+  source_run: 20261001T043129Z-discovery-legacycore-session-sign-on-f759
+  model: scripted
+  goal: Sign on to LegacyCore with the operator&#x27;s service account
+  tenant: acme
+  product_version: 4.2.1
+</pre><h2>Raw</h2><details><summary>result.json</summary><pre>{
+  &quot;run_id&quot;: &quot;20261001T043129Z-discovery-legacycore-session-sign-on-f759&quot;,
+  &quot;status&quot;: &quot;succeeded&quot;,
+  &quot;goal&quot;: &quot;Sign on to LegacyCore with the operator&#x27;s service account&quot;,
+  &quot;capability&quot;: &quot;legacycore.session.sign_on@1.0.0&quot;,
+  &quot;artifact_path&quot;: &quot;capabilities/legacycore/legacycore.session.sign_on@1.0.0.yaml&quot;,
+  &quot;outcome&quot;: null,
+  &quot;failure&quot;: null,
+  &quot;turns&quot;: 5,
+  &quot;actions&quot;: 3,
+  &quot;interventions&quot;: [],
+  &quot;usage&quot;: {
+    &quot;input_tokens&quot;: 0,
+    &quot;output_tokens&quot;: 0,
+    &quot;cache_read_input_tokens&quot;: 0,
+    &quot;cache_creation_input_tokens&quot;: 0
+  },
+  &quot;estimated_cost_usd&quot;: 0.0,
+  &quot;model&quot;: &quot;scripted&quot;,
+  &quot;duration_ms&quot;: 7087,
+  &quot;evidence_dir&quot;: &quot;runs/20261001T043129Z-discovery-legacycore-session-sign-on-f759&quot;
+}</pre></details></main></body></html>

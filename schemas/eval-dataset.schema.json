@@ -1,0 +1,828 @@
+{
+  "$defs": {
+    "DiscoveryCase": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "pattern": "^[a-z0-9][a-z0-9-]*$",
+          "title": "Id",
+          "type": "string"
+        },
+        "title": {
+          "title": "Title",
+          "type": "string"
+        },
+        "tags": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Tags",
+          "type": "array"
+        },
+        "tenant": {
+          "default": "acme",
+          "title": "Tenant",
+          "type": "string"
+        },
+        "inputs": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "title": "Inputs",
+          "type": "object"
+        },
+        "faults": {
+          "additionalProperties": true,
+          "description": "Injected into the mock before the case.",
+          "title": "Faults",
+          "type": "object"
+        },
+        "tenant_overrides": {
+          "default": true,
+          "description": "False runs the tenant without its reviewed overrides.",
+          "title": "Tenant Overrides",
+          "type": "boolean"
+        },
+        "library": {
+          "anyOf": [
+            {
+              "enum": [
+                "all",
+                "session",
+                "app"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Overrides the dataset's library scope.",
+          "title": "Library"
+        },
+        "goal": {
+          "title": "Goal",
+          "type": "string"
+        },
+        "kind": {
+          "default": "task",
+          "enum": [
+            "task",
+            "session"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "capability_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Capability Id"
+        },
+        "standin": {
+          "description": "Scripted plan that stands in for the model in offline mode.",
+          "title": "Standin",
+          "type": "string"
+        },
+        "expect": {
+          "$ref": "#/$defs/DiscoveryExpect"
+        },
+        "holdout": {
+          "items": {
+            "$ref": "#/$defs/HoldoutCase"
+          },
+          "title": "Holdout",
+          "type": "array"
+        },
+        "rubric": {
+          "default": false,
+          "description": "Grade the contract with the model-graded rubric (live mode).",
+          "title": "Rubric",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "id",
+        "title",
+        "goal",
+        "standin",
+        "expect"
+      ],
+      "title": "DiscoveryCase",
+      "type": "object"
+    },
+    "DiscoveryDataset": {
+      "additionalProperties": false,
+      "properties": {
+        "schema": {
+          "const": "rote.eval/v1",
+          "default": "rote.eval/v1",
+          "title": "Schema",
+          "type": "string"
+        },
+        "id": {
+          "pattern": "^[a-z][a-z0-9_-]*$",
+          "title": "Id",
+          "type": "string"
+        },
+        "title": {
+          "title": "Title",
+          "type": "string"
+        },
+        "description": {
+          "title": "Description",
+          "type": "string"
+        },
+        "capability": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Default capability for replay/probe cases.",
+          "title": "Capability"
+        },
+        "library": {
+          "default": "all",
+          "description": "Which part of the library each case's sandbox starts with.",
+          "enum": [
+            "all",
+            "session",
+            "app"
+          ],
+          "title": "Library",
+          "type": "string"
+        },
+        "threshold": {
+          "default": 1.0,
+          "description": "Minimum pass rate for the suite to pass its gate.",
+          "maximum": 1,
+          "minimum": 0,
+          "title": "Threshold",
+          "type": "number"
+        },
+        "kind": {
+          "const": "discovery",
+          "title": "Kind",
+          "type": "string"
+        },
+        "cases": {
+          "items": {
+            "$ref": "#/$defs/DiscoveryCase"
+          },
+          "minItems": 1,
+          "title": "Cases",
+          "type": "array"
+        }
+      },
+      "required": [
+        "id",
+        "title",
+        "description",
+        "kind",
+        "cases"
+      ],
+      "title": "DiscoveryDataset",
+      "type": "object"
+    },
+    "DiscoveryExpect": {
+      "additionalProperties": false,
+      "properties": {
+        "status": {
+          "default": "succeeded",
+          "enum": [
+            "succeeded",
+            "business_outcome",
+            "failed"
+          ],
+          "title": "Status",
+          "type": "string"
+        },
+        "inputs": {
+          "anyOf": [
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Exactly these inputs must be declared.",
+          "title": "Inputs"
+        },
+        "outputs": {
+          "anyOf": [
+            {
+              "additionalProperties": {
+                "enum": [
+                  "string",
+                  "integer",
+                  "decimal",
+                  "money",
+                  "date",
+                  "boolean"
+                ],
+                "type": "string"
+              },
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Declared outputs and their types.",
+          "title": "Outputs"
+        },
+        "sensitive": {
+          "description": "Inputs/outputs that must be pii or secret.",
+          "items": {
+            "type": "string"
+          },
+          "title": "Sensitive",
+          "type": "array"
+        },
+        "max_turns": {
+          "default": 30,
+          "maximum": 80,
+          "minimum": 3,
+          "title": "Max Turns",
+          "type": "integer"
+        },
+        "max_cost_usd": {
+          "anyOf": [
+            {
+              "exclusiveMinimum": 0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Max Cost Usd"
+        }
+      },
+      "title": "DiscoveryExpect",
+      "type": "object"
+    },
+    "HoldoutCase": {
+      "additionalProperties": false,
+      "description": "A replay of the freshly recorded artifact with inputs the agent never saw.",
+      "properties": {
+        "title": {
+          "title": "Title",
+          "type": "string"
+        },
+        "tenant": {
+          "default": "acme",
+          "title": "Tenant",
+          "type": "string"
+        },
+        "inputs": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "title": "Inputs",
+          "type": "object"
+        },
+        "expect": {
+          "$ref": "#/$defs/ReplayExpect"
+        }
+      },
+      "required": [
+        "title",
+        "expect"
+      ],
+      "title": "HoldoutCase",
+      "type": "object"
+    },
+    "ProbeCase": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "pattern": "^[a-z0-9][a-z0-9-]*$",
+          "title": "Id",
+          "type": "string"
+        },
+        "title": {
+          "title": "Title",
+          "type": "string"
+        },
+        "tags": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Tags",
+          "type": "array"
+        },
+        "tenant": {
+          "default": "acme",
+          "title": "Tenant",
+          "type": "string"
+        },
+        "inputs": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "title": "Inputs",
+          "type": "object"
+        },
+        "faults": {
+          "additionalProperties": true,
+          "description": "Injected into the mock before the case.",
+          "title": "Faults",
+          "type": "object"
+        },
+        "tenant_overrides": {
+          "default": true,
+          "description": "False runs the tenant without its reviewed overrides.",
+          "title": "Tenant Overrides",
+          "type": "boolean"
+        },
+        "library": {
+          "anyOf": [
+            {
+              "enum": [
+                "all",
+                "session",
+                "app"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Overrides the dataset's library scope.",
+          "title": "Library"
+        },
+        "capability": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Capability"
+        },
+        "expect": {
+          "$ref": "#/$defs/ProbeExpect"
+        }
+      },
+      "required": [
+        "id",
+        "title",
+        "expect"
+      ],
+      "title": "ProbeCase",
+      "type": "object"
+    },
+    "ProbeDataset": {
+      "additionalProperties": false,
+      "properties": {
+        "schema": {
+          "const": "rote.eval/v1",
+          "default": "rote.eval/v1",
+          "title": "Schema",
+          "type": "string"
+        },
+        "id": {
+          "pattern": "^[a-z][a-z0-9_-]*$",
+          "title": "Id",
+          "type": "string"
+        },
+        "title": {
+          "title": "Title",
+          "type": "string"
+        },
+        "description": {
+          "title": "Description",
+          "type": "string"
+        },
+        "capability": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Default capability for replay/probe cases.",
+          "title": "Capability"
+        },
+        "library": {
+          "default": "all",
+          "description": "Which part of the library each case's sandbox starts with.",
+          "enum": [
+            "all",
+            "session",
+            "app"
+          ],
+          "title": "Library",
+          "type": "string"
+        },
+        "threshold": {
+          "default": 1.0,
+          "description": "Minimum pass rate for the suite to pass its gate.",
+          "maximum": 1,
+          "minimum": 0,
+          "title": "Threshold",
+          "type": "number"
+        },
+        "kind": {
+          "const": "probe",
+          "title": "Kind",
+          "type": "string"
+        },
+        "cases": {
+          "items": {
+            "$ref": "#/$defs/ProbeCase"
+          },
+          "minItems": 1,
+          "title": "Cases",
+          "type": "array"
+        }
+      },
+      "required": [
+        "id",
+        "title",
+        "description",
+        "kind",
+        "cases"
+      ],
+      "title": "ProbeDataset",
+      "type": "object"
+    },
+    "ProbeExpect": {
+      "additionalProperties": false,
+      "properties": {
+        "handler": {
+          "description": "Whether a verified handler must come out. 'none' is the safety property for drift.",
+          "enum": [
+            "proposed",
+            "none"
+          ],
+          "title": "Handler",
+          "type": "string"
+        },
+        "kind": {
+          "anyOf": [
+            {
+              "enum": [
+                "business_outcome",
+                "failure",
+                "unknown"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Kind"
+        },
+        "code_pattern": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Regex the proposed outcome code must match.",
+          "title": "Code Pattern"
+        },
+        "evidence_type": {
+          "anyOf": [
+            {
+              "enum": [
+                "message",
+                "absence"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Evidence Type"
+        }
+      },
+      "required": [
+        "handler"
+      ],
+      "title": "ProbeExpect",
+      "type": "object"
+    },
+    "ReplayCase": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "pattern": "^[a-z0-9][a-z0-9-]*$",
+          "title": "Id",
+          "type": "string"
+        },
+        "title": {
+          "title": "Title",
+          "type": "string"
+        },
+        "tags": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Tags",
+          "type": "array"
+        },
+        "tenant": {
+          "default": "acme",
+          "title": "Tenant",
+          "type": "string"
+        },
+        "inputs": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "title": "Inputs",
+          "type": "object"
+        },
+        "faults": {
+          "additionalProperties": true,
+          "description": "Injected into the mock before the case.",
+          "title": "Faults",
+          "type": "object"
+        },
+        "tenant_overrides": {
+          "default": true,
+          "description": "False runs the tenant without its reviewed overrides.",
+          "title": "Tenant Overrides",
+          "type": "boolean"
+        },
+        "library": {
+          "anyOf": [
+            {
+              "enum": [
+                "all",
+                "session",
+                "app"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Overrides the dataset's library scope.",
+          "title": "Library"
+        },
+        "capability": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "id or id@version; defaults to the dataset's.",
+          "title": "Capability"
+        },
+        "expect": {
+          "$ref": "#/$defs/ReplayExpect"
+        }
+      },
+      "required": [
+        "id",
+        "title",
+        "expect"
+      ],
+      "title": "ReplayCase",
+      "type": "object"
+    },
+    "ReplayDataset": {
+      "additionalProperties": false,
+      "properties": {
+        "schema": {
+          "const": "rote.eval/v1",
+          "default": "rote.eval/v1",
+          "title": "Schema",
+          "type": "string"
+        },
+        "id": {
+          "pattern": "^[a-z][a-z0-9_-]*$",
+          "title": "Id",
+          "type": "string"
+        },
+        "title": {
+          "title": "Title",
+          "type": "string"
+        },
+        "description": {
+          "title": "Description",
+          "type": "string"
+        },
+        "capability": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Default capability for replay/probe cases.",
+          "title": "Capability"
+        },
+        "library": {
+          "default": "all",
+          "description": "Which part of the library each case's sandbox starts with.",
+          "enum": [
+            "all",
+            "session",
+            "app"
+          ],
+          "title": "Library",
+          "type": "string"
+        },
+        "threshold": {
+          "default": 1.0,
+          "description": "Minimum pass rate for the suite to pass its gate.",
+          "maximum": 1,
+          "minimum": 0,
+          "title": "Threshold",
+          "type": "number"
+        },
+        "kind": {
+          "const": "replay",
+          "title": "Kind",
+          "type": "string"
+        },
+        "cases": {
+          "items": {
+            "$ref": "#/$defs/ReplayCase"
+          },
+          "minItems": 1,
+          "title": "Cases",
+          "type": "array"
+        }
+      },
+      "required": [
+        "id",
+        "title",
+        "description",
+        "kind",
+        "cases"
+      ],
+      "title": "ReplayDataset",
+      "type": "object"
+    },
+    "ReplayExpect": {
+      "additionalProperties": false,
+      "properties": {
+        "status": {
+          "enum": [
+            "succeeded",
+            "business_outcome",
+            "failed"
+          ],
+          "title": "Status",
+          "type": "string"
+        },
+        "outputs": {
+          "anyOf": [
+            {
+              "additionalProperties": {
+                "type": "string"
+              },
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Exact outputs, as returned to the caller.",
+          "title": "Outputs"
+        },
+        "outcome": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Business-outcome code (status business_outcome).",
+          "title": "Outcome"
+        },
+        "failure": {
+          "anyOf": [
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Acceptable failure codes (status failed).",
+          "title": "Failure"
+        },
+        "recoveries": {
+          "description": "Handlers that must have recovered the run.",
+          "items": {
+            "type": "string"
+          },
+          "title": "Recoveries",
+          "type": "array"
+        },
+        "warnings": {
+          "anyOf": [
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Warning codes tolerated; any other is a regression.",
+          "title": "Warnings"
+        },
+        "max_duration_ms": {
+          "anyOf": [
+            {
+              "exclusiveMinimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Max Duration Ms"
+        }
+      },
+      "required": [
+        "status"
+      ],
+      "title": "ReplayExpect",
+      "type": "object"
+    }
+  },
+  "discriminator": {
+    "mapping": {
+      "discovery": "#/$defs/DiscoveryDataset",
+      "probe": "#/$defs/ProbeDataset",
+      "replay": "#/$defs/ReplayDataset"
+    },
+    "propertyName": "kind"
+  },
+  "oneOf": [
+    {
+      "$ref": "#/$defs/ReplayDataset"
+    },
+    {
+      "$ref": "#/$defs/ProbeDataset"
+    },
+    {
+      "$ref": "#/$defs/DiscoveryDataset"
+    }
+  ]
+}

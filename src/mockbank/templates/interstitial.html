@@ -1,0 +1,10 @@
+{% extends "_page.html" %}
+{% block body %}
+<table width="100%" height="80%"><tr><td align="center" valign="middle">
+<table border="2" cellpadding="10" cellspacing="0" bgcolor="#FFFFE0" width="460"><tr><td>
+<b>{{ title }}</b><br><br>{{ message }}<br><br>
+{% if checkbox %}<input type="checkbox" name="ATTEST" id="chkAttest" onclick="document.getElementById('btnGo').disabled=!this.checked"> {{ checkbox }}<br><br>{% endif %}
+<center><input type="button" id="btnGo" name="BTNACK" value="{{ button }}"{% if checkbox %} disabled{% endif %} onclick="{{ onclick }}"></center>
+</td></tr></table>
+</td></tr></table>
+{% endblock %}

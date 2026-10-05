@@ -1,0 +1,14 @@
+{% extends "_page.html" %}
+{% block body %}
+<table width="100%" cellpadding="3" cellspacing="0"><tr><td class="bar">MEMBER INQUIRY - RESULTS</td></tr></table>
+<br>
+{% if error %}<span class="err">{{ error }}</span><br><br><a href="mbrinq.asp">New Search</a>
+{% elif not results %}<span class="err">NO RECORDS MATCH SEARCH CRITERIA</span><br><br><a href="mbrinq.asp">New Search</a>
+{% else %}
+<table class="grid" border="1" cellspacing="0" cellpadding="3">
+<tr><th>MBR #</th><th>NAME</th><th>BRANCH</th><th>STATUS</th></tr>
+{% for m in results %}<tr><td><a href="mbrdtl.asp?M={{ m.number }}&tok={{ tok }}">{{ m.number }}</a></td><td>{{ m.name }}</td><td>{{ m.branch }}</td><td>{{ m.status }}</td></tr>
+{% endfor %}</table>
+<br><font size="1">{{ results|length }} RECORD(S) FOUND</font>
+{% endif %}
+{% endblock %}

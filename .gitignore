@@ -1,0 +1,26 @@
+# Secrets and local configuration (copy the .env.example files instead)
+.env
+backend/.env
+
+# Python
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+
+# Node
+node_modules/
+dist/
+coverage/
+*.tsbuildinfo
+backend/src/generated/
+
+# Runtime state and logs
+.rote/
+runs/
+logs/
+*.log
+
+.DS_Store

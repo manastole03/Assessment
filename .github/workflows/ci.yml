@@ -1,0 +1,142 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  backend:
+    name: Backend · lint, types, unit, integration, build
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: backend
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: rote
+          POSTGRES_PASSWORD: rote-ci-only
+          POSTGRES_DB: rote
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U rote -d rote"
+          --health-interval 5s --health-timeout 3s --health-retries 20
+    env:
+      # Integration tests migrate a throwaway schema of their own on this server.
+      TEST_DATABASE_URL: postgresql://rote:rote-ci-only@localhost:5432/rote?schema=public
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+      - name: Install
+        run: npm ci && npx prisma generate
+      - name: Lint
+        run: npm run lint && npm run format:check
+      - name: Type check
+        run: npm run typecheck
+      - name: Unit tests
+        run: npm run test:unit -- --ci
+      - name: Integration tests
+        run: npm run test:integration -- --ci
+      - name: Migrations are up to date with the schema
+        # Apply every migration, then fail if schema.prisma still differs (a model changed without one).
+        run: |
+          npx prisma migrate deploy
+          npx prisma migrate diff --from-config-datasource --to-schema prisma/schema.prisma --exit-code
+        env:
+          DATABASE_URL: ${{ env.TEST_DATABASE_URL }}
+      - name: Build
+        run: npm run build
+
+  ui:
+    name: UI · lint, types, tests, build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: ui
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: ui/package-lock.json
+      - name: Install
+        run: npm ci
+      - name: Lint
+        run: npm run lint && npm run format:check
+      - name: Type check
+        run: npm run typecheck
+      - name: Tests
+        run: npm test
+      - name: Build
+        run: npm run build
+
+  python:
+    name: Engine · lint, types, tests, evals
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v5
+      - uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+      - name: Install
+        run: uv sync --locked && uv run playwright install --with-deps chromium
+      - run: cp .env.example .env # synthetic credentials for the bundled mock only
+      - name: Lint and type check
+        run: make lint-py
+      - run: uv run rote validate
+      - name: Tests
+        run: uv run pytest -q
+      - name: Evals (offline; the gate fails the job)
+        run: make eval
+      - name: Keep eval results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: eval-results
+          path: runs/evals/*/result.json
+          if-no-files-found: ignore
+
+  docker:
+    name: Docker · build images
+    needs: [backend, ui, python]
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v5
+      - uses: docker/setup-buildx-action@v3
+      - name: Backend image (API + UI)
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: backend/Dockerfile
+          target: runtime
+          push: false
+          tags: rote-backend:ci
+          cache-from: type=gha,scope=backend
+          cache-to: type=gha,mode=max,scope=backend
+      - name: Engine image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: docker/engine.Dockerfile
+          push: false
+          tags: rote-engine:ci
+          cache-from: type=gha,scope=engine
+          cache-to: type=gha,mode=max,scope=engine

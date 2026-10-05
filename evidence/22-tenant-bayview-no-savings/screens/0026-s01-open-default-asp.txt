@@ -1,0 +1,18 @@
+URL: http://127.0.0.1:8600/bayview/default.asp  (title: BAYVIEW COMMUNITY CREDIT UNION - LegacyCore)
+Frames: top (default.asp), banner (banner.asp), menu (menu.asp), main (welcome.asp)
+Native dialog: none
+[frame banner — banner.asp]
+  e1 cell 'BAYVIEW COMMUNITY CREDIT UNION MEMBER SERVICES'
+  e2 cell 'SIGNED ON: {{secrets.username}} | BRANCH 001 LegacyCore v4.3.0'
+[frame menu — menu.asp]
+  e3 cell 'FUNCTIONS'
+  e4 link 'Home'
+  e5 link 'Member Lookup'
+  e6 link 'Transaction Posting'
+  e7 cell 'Reports'
+  e8 cell 'Collections'
+  e9 link 'Sign Off'
+[frame main — welcome.asp]
+  e10 text 'WELCOME TO LEGACYCORE MEMBER SERVICES. SELECT A FUNCTION FROM THE MENU.'
+  e11 cell 'HOME'
+  e12 text 'SYSTEM MESSAGES: NONE'

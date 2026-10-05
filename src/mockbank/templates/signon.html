@@ -1,0 +1,17 @@
+{% extends "_page.html" %}
+{% block body %}
+<table width="100%" height="85%" border="0"><tr><td align="center" valign="middle">
+<form method="post" action="signon.asp" name="frmSignon">
+<table border="1" cellpadding="0" cellspacing="0" bgcolor="#E8E8E8"><tr><td>
+<table border="0" cellpadding="5" cellspacing="0" width="340">
+<tr><td colspan="2" bgcolor="{{ t.color }}"><font color="#FFFFFF"><b>{{ t.name }}</b></font></td></tr>
+<tr><td colspan="2"><font size="1">MEMBER SERVICES - AUTHORIZED PERSONNEL ONLY</font></td></tr>
+{% if error %}<tr><td colspan="2"><span class="err">{{ error }}</span></td></tr>{% endif %}
+<tr><td width="35%">User ID:</td><td><input type="text" name="USRID" size="14" maxlength="10"></td></tr>
+<tr><td>Password:</td><td><input type="password" name="PSWD" size="14"></td></tr>
+<tr><td></td><td align="right"><input type="submit" name="BTNSO" value="Sign On"></td></tr>
+</table></td></tr></table>
+</form>
+<font size="1" color="#666666">LegacyCore Member Services v{{ t.version }} &copy; 1998-2019</font>
+</td></tr></table>
+{% endblock %}

@@ -1,0 +1,22 @@
+URL: http://127.0.0.1:8600/acme/default.asp  (title: ACME FEDERAL CREDIT UNION - LegacyCore)
+Frames: top (default.asp), banner (banner.asp), menu (menu.asp), main (mbrinq.asp)
+Native dialog: none
+[frame banner — banner.asp]
+  e1 cell 'ACME FEDERAL CREDIT UNION MEMBER SERVICES'
+  e2 cell 'SIGNED ON: {{secrets.username}} | BRANCH 001 LegacyCore v4.2.1'
+[frame menu — menu.asp]
+  e3 cell 'FUNCTIONS'
+  e4 link 'Home'
+  e5 link 'Member Inquiry'
+  e6 link 'Transaction Posting'
+  e7 cell 'Reports'
+  e8 cell 'Collections'
+  e9 link 'Sign Off'
+[frame main — mbrinq.asp]
+  e10 cell 'MEMBER INQUIRY'
+  e11 cell 'Member Number:'
+  e12 textbox label='Member Number' name=MBRNO value='{{inputs.member_id}}'
+  e13 cell 'Last Name:'
+  e14 textbox label='Last Name' name=LNAME value=''
+  e15 button 'Search' name=SRCH value='Search'
+  e16 button 'Clear' value='Clear'

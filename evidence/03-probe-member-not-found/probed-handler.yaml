@@ -1,0 +1,10 @@
+id: member_not_found
+description: No member has that member number.
+kind: business_outcome
+when:
+- {type: text, text: NO RECORDS MATCH SEARCH CRITERIA, frame: main}
+unless:
+- {type: step_target, step: s05_click_link_member_id, part: element}
+scope:
+- s05_click_link_member_id
+outcome: {code: MEMBER_NOT_FOUND, message: No member has that member number.}

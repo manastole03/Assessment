@@ -1,0 +1,151 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1"><title>Run report</title><style>
+:root{--bg:#fbfbf9;--fg:#1d1d1b;--muted:#6b6b66;--line:#e4e3dc;--card:#fff;--ok:#1f7a4d;--warn:#a86a00;
+--bad:#b3261e;--biz:#7a3fa0;--info:#1f5fa8}
+@media (prefers-color-scheme:dark){:root{--bg:#161614;--fg:#ecebe6;--muted:#9c9b94;--line:#2e2d29;--card:#1e1e1b}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font:14px/1.5 ui-sans-serif,system-ui,-apple-system,Segoe UI,sans-serif}
+main{max-width:1100px;margin:0 auto;padding:24px 16px 64px}h1{font-size:20px;margin:0 0 4px}h2{font-size:15px;margin:28px 0 8px}
+.meta{color:var(--muted);font-size:13px}.pill{display:inline-block;padding:1px 8px;border-radius:999px;font-size:12px;font-weight:600;color:#fff}
+.succeeded{background:var(--ok)}.failed{background:var(--bad)}.business_outcome{background:var(--biz)}.unknown{background:var(--muted)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px 16px;margin-top:14px}
+dl{display:grid;grid-template-columns:max-content 1fr;gap:6px 16px;margin:0}dt{color:var(--muted)}dd{margin:0;word-break:break-word}
+table{width:100%;border-collapse:collapse;background:var(--card);border:1px solid var(--line);border-radius:8px;overflow:hidden}
+td{padding:6px 10px;border-top:1px solid var(--line);vertical-align:top}td.t{color:var(--muted);white-space:nowrap;width:70px;font-variant-numeric:tabular-nums}
+td.k{white-space:nowrap;width:190px;font-family:ui-monospace,Menlo,monospace;font-size:12px}
+.k.step{color:var(--info)}.k.handler,.k.recovery{color:var(--warn)}.k.intervention,.k.human,.k.control{color:var(--biz)}.k.run,.k.discovery{font-weight:700}
+.k.policy,.k.failure{color:var(--bad)}.k.agent{color:var(--info)}.k.locator{color:var(--warn)}
+pre{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:12px;overflow:auto;font-size:12px;white-space:pre-wrap}
+img.shot{max-width:320px;border:1px solid var(--line);border-radius:4px;display:block;margin-top:6px;cursor:zoom-in}
+img.shot.big{max-width:100%}.detail{color:var(--muted);font-size:12px;word-break:break-word}.detail b{color:var(--fg)}
+ul{margin:4px 0;padding-left:18px}code{font-family:ui-monospace,Menlo,monospace;font-size:12px}
+</style></head>
+<body><main><h1>legacycore.member.get_savings_balance@1.0.2</h1>
+<div class="meta"><span class="pill failed">failed</span> · replay
+ · run <code>20261001T043219Z-probe-legacycore-member-get-savings-balance-pr-2486</code> · 44 events</div>
+<div class="card"><dl><dt>capability</dt><dd><code>legacycore.member.get_savings_balance@1.0.2</code> · sha256:f0b6128a7f88081e</dd><dt>layers</dt><dd><ul><li>capability legacycore.member.get_savings_balance@1.0.2 (edf8c8ac465a)</li><li>app legacycore (daa7527aa8f0)</li></ul></dd><dt>tenant</dt><dd>acme</dd><dt>failure</dt><dd><code>TARGET_NOT_FOUND</code> could not find cell in column &#x27;CURRENT BALANCE&#x27;, row &#x27;SHARE SAVINGS&#x27; (main frame) within 15000 ms</dd><dt>at step</dt><dd><code>s06_read_savings_balance</code> — Read savings_balance from cell in column &#x27;CURRENT BALANCE&#x27;, row &#x27;SHARE SAVINGS&#x27; (main frame)</dd><dt>expected</dt><dd>cell in column &#x27;CURRENT BALANCE&#x27;, row &#x27;SHARE SAVINGS&#x27; (main frame) (locators tried: table_cell)</dd><dt>observed</dt><dd><pre>locator results: table_cell: 0 match(es)
+[top @ default.asp] 
+[banner @ banner.asp] ACME FEDERAL CREDIT UNION | MEMBER SERVICES	SIGNED ON: {{secrets.username}}  |  BRANCH 001 | LegacyCore v4.2.1
+[menu @ menu.asp] FUNCTIONS | Home | Member Inquiry | Transaction Posting | Reports | Collections | Sign Off
+[main @ mbrdtl.asp] MEMBER DETAIL | MEMBER NUMBER:	{{inputs.member_id}}		BRANCH:	002 - WESTSIDE | NAME:	{{outputs.member_name}}		MEMBER SINCE:	06/21/2021 | SSN:	[SSN ***-**-8901]		DATE OF BIRTH:	01/05/1979 | PHONE:	[PHONE]		EMAIL:	[EMAIL] | SHARES / L</pre></dd><dt>retryable</dt><dd>False</dd><dt>screenshot</dt><dd><img class="shot" src="screens/0042-failure-target-not-found.jpg" onclick="this.classList.toggle('big')"></dd></dl></div>
+<h2>Timeline</h2><table><tr><td class="t">0.2s</td><td class="k run">run.started</td><td class="detail"><b>kind</b>: replay · <b>run_id</b>: 20261001T043219Z-probe-legacycore-member-get-savings-balance-pr-2486 · <b>subject</b>: legacycore.member.get_savings_balance@1.0.2 · <b>tenant</b>: acme · <b>evidence_dir</b>: runs/20261001T043219Z-probe-legacycore-member-get-savings-balance-pr-2486 · <b>layers</b>: [&quot;capability legacycore.member.get_savings_balance@1.0.2 (edf8c8ac465a)&quot;, &quot;app legacycore (daa7527aa8f0)&quot;] · <b>effective_hash</b>: sha256:f0b6128a7f88081e · <b>inputs</b>: [&quot;member_id&quot;]</td></tr><tr><td class="t">0.2s</td><td class="k session">session.establishing</td><td class="detail"><b>capability</b>: legacycore.session.sign_on@1.0.0</td></tr><tr><td class="t">0.2s</td><td class="k step">step.started</td><td class="detail"><b>step</b>: s01_open_signon_asp · <b>intent</b>: Open signon.asp</td></tr><tr><td class="t">0.2s</td><td class="k policy">policy.decision</td><td class="detail"><b>verdict</b>: allow · <b>risk</b>: read_only · <b>reason</b>: navigate does not change application state</td></tr><tr><td class="t">0.3s</td><td class="k step">step.completed</td><td class="detail"><b>step</b>: s01_open_signon_asp · <b>duration_ms</b>: 62 · <b>locator</b>: None</td></tr><tr><td class="t">0.3s</td><td class="k evidence">evidence.captured</td><td class="detail"><b>s01_open_signon_asp</b><img class="shot" loading="lazy" src="screens/0006-s01-open-signon-asp.jpg" onclick="this.classList.toggle('big')"></td></tr><tr><td class="t">0.3s</td><td class="k step">step.started</td><td class="detail"><b>step</b>: s02_fill_user_id_textbox · <b>intent</b>: Enter {{secrets.username}} in &#x27;User ID&#x27; textbox</td></tr><tr><td class="t">0.3s</td><td class="k policy">policy.decision</td><td class="detail"><b>verdict</b>: allow · <b>risk</b>: reversible · <b>reason</b>: edits unsaved form state</td></tr><tr><td class="t">0.4s</td><td class="k step">step.completed</td><td class="detail"><b>step</b>: s02_fill_user_id_textbox · <b>duration_ms</b>: 69 · <b>locator</b>: attribute</td></tr><tr><td class="t">0.4s</td><td class="k evidence">evidence.captured</td><td class="detail"><b>s02_fill_user_id_textbox</b><img class="shot" loading="lazy" src="screens/0010-s02-fill-user-id-textbox.jpg" onclick="this.classList.toggle('big')"></td></tr><tr><td class="t">0.4s</td><td class="k step">step.started</td><td class="detail"><b>step</b>: s03_fill_password_textbox · <b>intent</b>: Enter {{secrets.password}} in &#x27;Password&#x27; textbox</td></tr><tr><td class="t">0.4s</td><td class="k policy">policy.decision</td><td class="detail"><b>verdict</b>: allow · <b>risk</b>: reversible · <b>reason</b>: edits unsaved form state</td></tr><tr><td class="t">0.5s</td><td class="k step">step.completed</td><td class="detail"><b>step</b>: s03_fill_password_textbox · <b>duration_ms</b>: 80 · <b>locator</b>: attribute</td></tr><tr><td class="t">0.5s</td><td class="k evidence">evidence.captured</td><td class="detail"><b>s03_fill_password_textbox</b><img class="shot" loading="lazy" src="screens/0014-s03-fill-password-textbox.jpg" onclick="this.classList.toggle('big')"></td></tr><tr><td class="t">0.5s</td><td class="k step">step.started</td><td class="detail"><b>step</b>: s04_click_button_sign_on · <b>intent</b>: Click button &#x27;Sign On&#x27;</td></tr><tr><td class="t">0.5s</td><td class="k policy">policy.decision</td><td class="detail"><b>verdict</b>: allow · <b>risk</b>: reversible · <b>reason</b>: navigates or submits without a commit keyword</td></tr><tr><td class="t">0.6s</td><td class="k step">step.completed</td><td class="detail"><b>step</b>: s04_click_button_sign_on · <b>duration_ms</b>: 103 · <b>locator</b>: attribute</td></tr><tr><td class="t">0.6s</td><td class="k evidence">evidence.captured</td><td class="detail"><b>s04_click_button_sign_on</b><img class="shot" loading="lazy" src="screens/0018-s04-click-button-sign-on.jpg" onclick="this.classList.toggle('big')"></td></tr><tr><td class="t">0.6s</td><td class="k checkpoint">checkpoint.verified</td><td class="detail"><b>capability</b>: legacycore.session.sign_on@1.0.0 · <b>description</b>: &#x27;FUNCTIONS&#x27; is shown</td></tr><tr><td class="t">0.6s</td><td class="k app">app.version</td><td class="detail"><b>version</b>: 4.2.1 · <b>supported</b>: &gt;=4.2.0,&lt;5.0.0 · <b>compatible</b>: True</td></tr><tr><td class="t">0.6s</td><td class="k step">step.started</td><td class="detail"><b>step</b>: s01_open_default_asp · <b>intent</b>: Open default.asp</td></tr><tr><td class="t">0.6s</td><td class="k policy">policy.decision</td><td class="detail"><b>verdict</b>: allow · <b>risk</b>: read_only · <b>reason</b>: navigate does not change application state</td></tr><tr><td class="t">0.7s</td><td class="k step">step.completed</td><td class="detail"><b>step</b>: s01_open_default_asp · <b>duration_ms</b>: 59 · <b>locator</b>: None</td></tr><tr><td class="t">0.7s</td><td class="k evidence">evidence.captured</td><td class="detail"><b>s01_open_default_asp</b><img class="shot" loading="lazy" src="screens/0024-s01-open-default-asp.jpg" onclick="this.classList.toggle('big')"></td></tr><tr><td class="t">0.7s</td><td class="k step">step.started</td><td class="detail"><b>step</b>: s02_click_link_member_inquiry · <b>intent</b>: Click link &#x27;Member Inquiry&#x27; (menu frame)</td></tr><tr><td class="t">0.7s</td><td class="k policy">policy.decision</td><td class="detail"><b>verdict</b>: allow · <b>risk</b>: reversible · <b>reason</b>: navigates or submits without a commit keyword</td></tr><tr><td class="t">0.8s</td><td class="k step">step.completed</td><td class="detail"><b>step</b>: s02_click_link_member_inquiry · <b>duration_ms</b>: 92 · <b>locator</b>: attribute</td></tr><tr><td class="t">0.9s</td><td class="k evidence">evidence.captured</td><td class="detail"><b>s02_click_link_member_inquiry</b><img class="shot" loading="lazy" src="screens/0028-s02-click-link-member-inquiry.jpg" onclick="this.classList.toggle('big')"></td></tr><tr><td class="t">0.9s</td><td class="k step">step.started</td><td class="detail"><b>step</b>: s03_fill_member_number_textbox · <b>intent</b>: Enter {{inputs.member_id}} in &#x27;Member Number&#x27; textbox (main frame)</td></tr><tr><td class="t">0.9s</td><td class="k policy">policy.decision</td><td class="detail"><b>verdict</b>: allow · <b>risk</b>: reversible · <b>reason</b>: edits unsaved form state</td></tr><tr><td class="t">0.9s</td><td class="k step">step.completed</td><td class="detail"><b>step</b>: s03_fill_member_number_textbox · <b>duration_ms</b>: 65 · <b>locator</b>: attribute</td></tr><tr><td class="t">1.0s</td><td class="k evidence">evidence.captured</td><td class="detail"><b>s03_fill_member_number_textbox</b><img class="shot" loading="lazy" src="screens/0032-s03-fill-member-number-textbox.jpg" onclick="this.classList.toggle('big')"></td></tr><tr><td class="t">1.0s</td><td class="k step">step.started</td><td class="detail"><b>step</b>: s04_click_button_search · <b>intent</b>: Click button &#x27;Search&#x27; (main frame)</td></tr><tr><td class="t">1.0s</td><td class="k policy">policy.decision</td><td class="detail"><b>verdict</b>: allow · <b>risk</b>: reversible · <b>reason</b>: navigates or submits without a commit keyword</td></tr><tr><td class="t">1.1s</td><td class="k step">step.completed</td><td class="detail"><b>step</b>: s04_click_button_search · <b>duration_ms</b>: 91 · <b>locator</b>: attribute</td></tr><tr><td class="t">1.1s</td><td class="k evidence">evidence.captured</td><td class="detail"><b>s04_click_button_search</b><img class="shot" loading="lazy" src="screens/0036-s04-click-button-search.jpg" onclick="this.classList.toggle('big')"></td></tr><tr><td class="t">1.1s</td><td class="k step">step.started</td><td class="detail"><b>step</b>: s05_click_link_member_id · <b>intent</b>: Click link &#x27;{{inputs.member_id}}&#x27; (main frame)</td></tr><tr><td class="t">1.1s</td><td class="k policy">policy.decision</td><td class="detail"><b>verdict</b>: allow · <b>risk</b>: reversible · <b>reason</b>: navigates or submits without a commit keyword</td></tr><tr><td class="t">1.2s</td><td class="k step">step.completed</td><td class="detail"><b>step</b>: s05_click_link_member_id · <b>duration_ms</b>: 88 · <b>locator</b>: role</td></tr><tr><td class="t">1.2s</td><td class="k evidence">evidence.captured</td><td class="detail"><b>s05_click_link_member_id</b><img class="shot" loading="lazy" src="screens/0040-s05-click-link-member-id.jpg" onclick="this.classList.toggle('big')"></td></tr><tr><td class="t">1.2s</td><td class="k step">step.started</td><td class="detail"><b>step</b>: s06_read_savings_balance · <b>intent</b>: Read savings_balance from cell in column &#x27;CURRENT BALANCE&#x27;, row &#x27;SHARE SAVINGS&#x27; (main frame)</td></tr><tr><td class="t">16.3s</td><td class="k evidence">evidence.captured</td><td class="detail"><b>failure-TARGET_NOT_FOUND</b><img class="shot" loading="lazy" src="screens/0042-failure-target-not-found.jpg" onclick="this.classList.toggle('big')"></td></tr><tr><td class="t">16.3s</td><td class="k run">run.finished</td><td class="detail"><b>status</b>: failed · <b>duration_ms</b>: 16110 · <b>outcome</b>: None · <b>failure</b>: TARGET_NOT_FOUND</td></tr><tr><td class="t">16.4s</td><td class="k probe">probe.classified</td><td class="detail"><b>kind</b>: business_outcome · <b>code</b>: NO_SAVINGS_ACCOUNT · <b>message</b>: The member has no share savings account. · <b>evidence_ref</b>: e27 · <b>evidence_type</b>: absence · <b>rationale</b>: offline rule (stand-in for the model) · <b>source</b>: authored</td></tr></table><h2>probed-handler.yaml</h2><pre>id: no_savings_account
+description: The member has no share savings account.
+kind: business_outcome
+when:
+- {type: text, text: SHARES / LOANS, frame: main}
+- {type: step_target, step: s06_read_savings_balance, part: anchor}
+unless:
+- {type: step_target, step: s06_read_savings_balance, part: element}
+scope:
+- s06_read_savings_balance
+outcome: {code: NO_SAVINGS_ACCOUNT, message: The member has no share savings account.}
+</pre><h2>Raw</h2><details><summary>result.json</summary><pre>{
+  &quot;run_id&quot;: &quot;20261001T043219Z-probe-legacycore-member-get-savings-balance-pr-2486&quot;,
+  &quot;capability&quot;: {
+    &quot;id&quot;: &quot;legacycore.member.get_savings_balance&quot;,
+    &quot;version&quot;: &quot;1.0.2&quot;,
+    &quot;effective_hash&quot;: &quot;sha256:f0b6128a7f88081e&quot;,
+    &quot;layers&quot;: [
+      &quot;capability legacycore.member.get_savings_balance@1.0.2 (edf8c8ac465a)&quot;,
+      &quot;app legacycore (daa7527aa8f0)&quot;
+    ]
+  },
+  &quot;tenant&quot;: &quot;acme&quot;,
+  &quot;status&quot;: &quot;failed&quot;,
+  &quot;outputs&quot;: null,
+  &quot;outcome&quot;: null,
+  &quot;failure&quot;: {
+    &quot;code&quot;: &quot;TARGET_NOT_FOUND&quot;,
+    &quot;message&quot;: &quot;could not find cell in column &#x27;CURRENT BALANCE&#x27;, row &#x27;SHARE SAVINGS&#x27; (main frame) within 15000 ms&quot;,
+    &quot;app_code&quot;: null,
+    &quot;capability&quot;: &quot;legacycore.member.get_savings_balance@1.0.2&quot;,
+    &quot;step_id&quot;: &quot;s06_read_savings_balance&quot;,
+    &quot;step_index&quot;: 5,
+    &quot;step_intent&quot;: &quot;Read savings_balance from cell in column &#x27;CURRENT BALANCE&#x27;, row &#x27;SHARE SAVINGS&#x27; (main frame)&quot;,
+    &quot;expected&quot;: &quot;cell in column &#x27;CURRENT BALANCE&#x27;, row &#x27;SHARE SAVINGS&#x27; (main frame) (locators tried: table_cell)&quot;,
+    &quot;observed&quot;: &quot;locator results: table_cell: 0 match(es)\n[top @ default.asp] \n[banner @ banner.asp] ACME FEDERAL CREDIT UNION | MEMBER SERVICES\tSIGNED ON: {{secrets.username}} \u00a0|\u00a0 BRANCH 001 | LegacyCore v4.2.1\n[menu @ menu.asp] FUNCTIONS | Home | Member Inquiry | Transaction Posting | Reports | Collections | Sign Off\n[main @ mbrdtl.asp] MEMBER DETAIL | MEMBER NUMBER:\t{{inputs.member_id}}\t\tBRANCH:\t002 - WESTSIDE | NAME:\t{{outputs.member_name}}\t\tMEMBER SINCE:\t06/21/2021 | SSN:\t[SSN ***-**-8901]\t\tDATE OF BIRTH:\t01/05/1979 | PHONE:\t[PHONE]\t\tEMAIL:\t[EMAIL] | SHARES / L&quot;,
+    &quot;retryable&quot;: false,
+    &quot;evidence&quot;: {
+      &quot;screenshot&quot;: &quot;screens/0042-failure-target-not-found.jpg&quot;,
+      &quot;observation&quot;: &quot;screens/0042-failure-target-not-found.txt&quot;,
+      &quot;dom&quot;: &quot;dom/0042-failure-target-not-found/&quot;
+    }
+  },
+  &quot;recoveries&quot;: [],
+  &quot;warnings&quot;: [],
+  &quot;interventions&quot;: [],
+  &quot;steps&quot;: [
+    {
+      &quot;capability&quot;: &quot;legacycore.session.sign_on@1.0.0&quot;,
+      &quot;step_id&quot;: &quot;s01_open_signon_asp&quot;,
+      &quot;status&quot;: &quot;ok&quot;,
+      &quot;duration_ms&quot;: 62,
+      &quot;locator&quot;: null
+    },
+    {
+      &quot;capability&quot;: &quot;legacycore.session.sign_on@1.0.0&quot;,
+      &quot;step_id&quot;: &quot;s02_fill_user_id_textbox&quot;,
+      &quot;status&quot;: &quot;ok&quot;,
+      &quot;duration_ms&quot;: 69,
+      &quot;locator&quot;: &quot;attribute&quot;
+    },
+    {
+      &quot;capability&quot;: &quot;legacycore.session.sign_on@1.0.0&quot;,
+      &quot;step_id&quot;: &quot;s03_fill_password_textbox&quot;,
+      &quot;status&quot;: &quot;ok&quot;,
+      &quot;duration_ms&quot;: 80,
+      &quot;locator&quot;: &quot;attribute&quot;
+    },
+    {
+      &quot;capability&quot;: &quot;legacycore.session.sign_on@1.0.0&quot;,
+      &quot;step_id&quot;: &quot;s04_click_button_sign_on&quot;,
+      &quot;status&quot;: &quot;ok&quot;,
+      &quot;duration_ms&quot;: 103,
+      &quot;locator&quot;: &quot;attribute&quot;
+    },
+    {
+      &quot;capability&quot;: &quot;legacycore.member.get_savings_balance@1.0.2&quot;,
+      &quot;step_id&quot;: &quot;s01_open_default_asp&quot;,
+      &quot;status&quot;: &quot;ok&quot;,
+      &quot;duration_ms&quot;: 59,
+      &quot;locator&quot;: null
+    },
+    {
+      &quot;capability&quot;: &quot;legacycore.member.get_savings_balance@1.0.2&quot;,
+      &quot;step_id&quot;: &quot;s02_click_link_member_inquiry&quot;,
+      &quot;status&quot;: &quot;ok&quot;,
+      &quot;duration_ms&quot;: 92,
+      &quot;locator&quot;: &quot;attribute&quot;
+    },
+    {
+      &quot;capability&quot;: &quot;legacycore.member.get_savings_balance@1.0.2&quot;,
+      &quot;step_id&quot;: &quot;s03_fill_member_number_textbox&quot;,
+      &quot;status&quot;: &quot;ok&quot;,
+      &quot;duration_ms&quot;: 65,
+      &quot;locator&quot;: &quot;attribute&quot;
+    },
+    {
+      &quot;capability&quot;: &quot;legacycore.member.get_savings_balance@1.0.2&quot;,
+      &quot;step_id&quot;: &quot;s04_click_button_search&quot;,
+      &quot;status&quot;: &quot;ok&quot;,
+      &quot;duration_ms&quot;: 91,
+      &quot;locator&quot;: &quot;attribute&quot;
+    },
+    {
+      &quot;capability&quot;: &quot;legacycore.member.get_savings_balance@1.0.2&quot;,
+      &quot;step_id&quot;: &quot;s05_click_link_member_id&quot;,
+      &quot;status&quot;: &quot;ok&quot;,
+      &quot;duration_ms&quot;: 88,
+      &quot;locator&quot;: &quot;role&quot;
+    },
+    {
+      &quot;capability&quot;: &quot;legacycore.member.get_savings_balance@1.0.2&quot;,
+      &quot;step_id&quot;: &quot;s06_read_savings_balance&quot;,
+      &quot;status&quot;: &quot;failed&quot;,
+      &quot;duration_ms&quot;: 0,
+      &quot;locator&quot;: null
+    }
+  ],
+  &quot;started_at&quot;: &quot;2026-10-01T04:32:19.723744Z&quot;,
+  &quot;duration_ms&quot;: 16110,
+  &quot;evidence_dir&quot;: &quot;runs/20261001T043219Z-probe-legacycore-member-get-savings-balance-pr-2486&quot;
+}</pre></details></main></body></html>
