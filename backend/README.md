@@ -1,470 +1,879 @@
-# rote control plane (backend)
+<div align="center">
 
-The authenticated REST API in front of the rote engine. It owns **identity, roles, approvals, the run index, human handoffs and the audit trail**, and serves the built web UI. The Python engine stays the source of truth for capability artifacts (reviewed YAML in git) and run evidence (files). This service decides **who** may do **what** with them and records it.
+# rote control plane
 
-```text
-browser / script / agent ──▶ control plane (NestJS, this directory) ──▶ PostgreSQL
-                                  │  /api/v1 · /health · /api/docs · UI
-                                  ▼
-                              rote engine (Python, internal) ──▶ target app
-```
+**The secure REST API for rote.** It handles sign-in, users and roles, API keys, approvals, run history, human handoffs and the audit log, and it serves the rote web app.
 
-- **Stack:** Node.js 24, TypeScript (strict), NestJS 12, PostgreSQL 17, Prisma 7, Jest, Docker.
-- **API:** `/api/v1/...`, OpenAPI at **`/api/docs`** (JSON at `/api/docs-json`), probes at `/health`.
-- **Quality gates:** `npm run lint && npm run typecheck && npm run test:unit && npm run test:integration && npm run build`, the same commands CI runs.
+![Node.js](https://img.shields.io/badge/Node.js-24-339933?logo=node.js&logoColor=white)
+![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178C6?logo=typescript&logoColor=white)
+![NestJS](https://img.shields.io/badge/NestJS-12-E0234E?logo=nestjs&logoColor=white)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-17-4169E1?logo=postgresql&logoColor=white)
+![Prisma](https://img.shields.io/badge/Prisma-7-2D3748?logo=prisma&logoColor=white)
+![Docker](https://img.shields.io/badge/Docker-ready-2496ED?logo=docker&logoColor=white)
+![Jest](https://img.shields.io/badge/tested_with-Jest-C21325?logo=jest&logoColor=white)
+
+[Getting started](#-getting-started) · [Architecture](#-architecture) · [API](#-api) · [Authentication](#-authentication-and-roles) · [Deployment](#-deploying-to-production)
+
+![The rote sign-in page, served by the control plane](../docs/images/backend-sign-in.png)
+
+</div>
 
 ---
 
 ## Contents
 
-1. [Quick start](#quick-start)
-2. [Architecture](#architecture)
-3. [Project structure](#project-structure)
-4. [Technology choices](#technology-choices)
-5. [Database schema](#database-schema)
-6. [API](#api)
-7. [Authentication and authorization](#authentication-and-authorization)
-8. [Configuration](#configuration)
-9. [Local development](#local-development)
-10. [Testing](#testing)
-11. [Docker](#docker)
-12. [Production deployment](#production-deployment)
-13. [Architectural decisions](#architectural-decisions)
-14. [Limitations and TODOs](#limitations-and-todos)
+- [What it does](#-what-it-does)
+- [Getting started](#-getting-started)
+- [Screenshots](#-screenshots)
+- [Architecture](#-architecture)
+- [Repository structure](#-repository-structure)
+- [Tech stack](#-tech-stack)
+- [Database](#-database)
+- [API](#-api)
+- [Authentication and roles](#-authentication-and-roles)
+- [Configuration](#-configuration)
+- [Testing](#-testing)
+- [Docker](#-docker)
+- [CI/CD](#-cicd)
+- [Deploying to production](#-deploying-to-production)
+- [Troubleshooting](#-troubleshooting)
+- [Design decisions](#-design-decisions)
+- [Limitations and roadmap](#-limitations-and-roadmap)
+- [Contributing](#-contributing)
 
 ---
 
-## Quick start
+## ✨ What it does
 
-From the repository root:
+rote records a back-office task once on a legacy UI, then replays it deterministically (see the [main README](../README.md)). The **rote engine** (Python) does the browser work. **This service** sits in front of it and makes it safe for a team to use:
+
+| Feature                  | What you get                                                                                                                                        |
+| ------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Sign-in and sessions** | Email and password sign-in, sessions that refresh themselves, sign-out that really revokes the session, and account lockout after repeated failures |
+| **Roles**                | Four roles: Viewer, Operator, Reviewer and Admin. Every endpoint checks the caller's role on the server.                                            |
+| **API keys**             | Keys for scripts, AI agents and MCP clients. A key can never have more access than its owner.                                                       |
+| **Approvals**            | A reviewer approves a recorded capability before it can run unattended. Nobody can approve their own recording (the four-eyes rule).                |
+| **Run history**          | Every run is indexed in PostgreSQL, wherever it was started, and can be searched, filtered and paged.                                               |
+| **Human handoff**        | A queue of runs that need a person. An operator takes over the live session and then hands it back.                                                 |
+| **Audit log**            | Who did what and when, for every security-relevant action                                                                                           |
+| **Production basics**    | Health checks, structured logs, rate limiting, security headers, Swagger docs and Docker                                                            |
+
+---
+
+## 🚀 Getting started
+
+### Prerequisites
+
+| Tool                             | Version                         | Needed for                                                   |
+| -------------------------------- | ------------------------------- | ------------------------------------------------------------ |
+| Git                              | any                             | cloning the repo                                             |
+| Docker with Compose v2           | recent                          | running everything (option A), or just PostgreSQL (option B) |
+| Make, OpenSSL                    | preinstalled on macOS and Linux | shortcuts, and generating secrets                            |
+| Node.js                          | 24 or newer                     | option B only: running the backend outside Docker            |
+| [uv](https://docs.astral.sh/uv/) | latest                          | option B only: running the Python engine outside Docker      |
+
+> On Windows, use WSL2. The Makefile and scripts expect bash.
+
+### 1. Clone the repository
 
 ```bash
-make up        # generates secrets into .env, then builds and starts Postgres, migrations, engine, mock and backend
+git clone https://github.com/manastole03/Assessment.git
+cd Assessment
 ```
 
-Open `http://localhost:3000` (UI), `http://localhost:3000/api/docs` (API docs) or `http://localhost:3000/health`. Sign in as `admin@rote.local` with `SEED_ADMIN_PASSWORD` from `./.env`. Change the host port with `ROTE_HTTP_PORT`.
+### 2. Option A: run everything with Docker (recommended)
+
+Working on backend code? See [Option B](#option-b-run-the-backend-locally-hot-reload) for hot reload.
+
+One command creates your secrets, builds the images and starts the whole stack:
+
+```bash
+make up
+```
+
+What happens:
+
+1. `make env` creates `.env` and fills in random secrets: the database password, JWT secret, engine token and seed passwords. It never prints or overwrites them.
+2. Docker starts **PostgreSQL**, then a one-time **migrate** job that creates the tables and the first users.
+3. The **engine** and the **mock target app** start.
+4. The **backend** starts once everything it needs is healthy.
+
+When it finishes, open:
+
+| What               | URL                                 |
+| ------------------ | ----------------------------------- |
+| Web app            | http://localhost:3000               |
+| API docs (Swagger) | http://localhost:3000/api/docs      |
+| OpenAPI JSON       | http://localhost:3000/api/docs-json |
+| Health             | http://localhost:3000/health        |
+
+> Port 3000 already in use? Add `ROTE_HTTP_PORT=3300` to `.env` and run `make up` again.
+
+**Sign in** as `admin@rote.local`. The password was generated into `.env`:
+
+```bash
+grep '^SEED_ADMIN_PASSWORD=' .env | cut -d= -f2-
+```
+
+Three demo accounts are also created, all with `SEED_DEMO_PASSWORD`: `reviewer@rote.local`, `operator@rote.local` and `viewer@rote.local`.
+
+### 3. Make your first API calls
+
+```bash
+API=http://localhost:3000/api/v1
+PASSWORD=$(grep '^SEED_ADMIN_PASSWORD=' .env | cut -d= -f2-)
+
+# Sign in and keep the access token
+TOKEN=$(curl -s -X POST $API/auth/login \
+  -H 'content-type: application/json' \
+  -d "{\"email\":\"admin@rote.local\",\"password\":\"$PASSWORD\"}" \
+  | sed -E 's/.*"accessToken":"([^"]+)".*/\1/')
+
+# Who am I?
+curl -s -w '\n' $API/auth/me -H "authorization: Bearer $TOKEN"
+
+# List users (admins only), 5 per page
+curl -s -w '\n' "$API/users?limit=5" -H "authorization: Bearer $TOKEN"
+
+# Create an API key for a script or agent (the secret is shown once)
+curl -s -w '\n' -X POST $API/api-keys -H "authorization: Bearer $TOKEN" \
+  -H 'content-type: application/json' \
+  -d '{"name":"my script","role":"OPERATOR","expiresInDays":30}'
+```
+
+Access tokens last 15 minutes. For anything long-running, use an API key: `Authorization: Bearer rote_…`.
+
+### Option B: run the backend locally (hot reload)
+
+Use this when you are changing backend code. PostgreSQL still runs in Docker.
+
+```bash
+make env          # create .env and backend/.env with generated secrets
+make db           # PostgreSQL 17 on 127.0.0.1:5433
+make migrate      # install dependencies, create the tables, seed the users
+
+cd backend
+npm run start:dev # API on http://localhost:3000, restarts on every change
+```
+
+The engine is only needed for runs, capabilities and evals. Start it in two more terminals from the repo root:
+
+```bash
+make bank         # the mock target app on :8600
+make engine       # the rote engine on :8700
+```
+
+For the web app with hot reload, also run `make ui-dev` and open http://localhost:5173.
+
+### Stop and reset
+
+```bash
+make down                  # stop everything (your data is kept)
+docker compose down -v     # stop and DELETE all data, for a clean start
+```
+
+### Handy commands
+
+| Command                                       | What it does                                              |
+| --------------------------------------------- | --------------------------------------------------------- |
+| `make help`                                   | List every target                                         |
+| `make up` / `make down` / `make logs`         | Start, stop, or follow the logs of the Docker stack       |
+| `make db` / `make migrate` / `make seed`      | PostgreSQL only; apply migrations and seed; seed again    |
+| `make backend`                                | Backend in watch mode (same as `npm run start:dev`)       |
+| `make test-backend` / `make test-backend-int` | Backend unit tests; integration tests (starts PostgreSQL) |
+| `make lint-backend`                           | Type check, ESLint and Prettier                           |
+| `make hooks`                                  | Install the git pre-commit hooks                          |
 
 ---
 
-## Architecture
+## 📸 Screenshots
 
-A modular monolith with strict layers. Every request takes the same path:
+| Interactive API docs at `/api/docs`                | Every endpoint documents its body and responses                             |
+| -------------------------------------------------- | --------------------------------------------------------------------------- |
+| ![Swagger UI](../docs/images/backend-api-docs.png) | ![The login endpoint in Swagger](../docs/images/backend-api-docs-login.png) |
+
+| The web app it serves                            | A human handoff, powered by the operator API                                          |
+| ------------------------------------------------ | ------------------------------------------------------------------------------------- |
+| ![Overview page](../docs/images/ui-overview.png) | ![An operator in control of a live session](../docs/images/ui-handoff-in-control.png) |
+
+---
+
+## 🧱 Architecture
+
+### The big picture
+
+```mermaid
+flowchart LR
+    subgraph Clients
+        B["Browser<br/>(React web app)"]
+        S["Scripts and CI<br/>(Bearer token)"]
+        A["AI agents<br/>(API key or MCP)"]
+    end
+
+    subgraph CP["Control plane (this service)"]
+        API["NestJS REST API<br/>/api/v1"]
+        WEB["Web app files<br/>/"]
+    end
+
+    DB[("PostgreSQL<br/>users, sessions, runs,<br/>approvals, audit")]
+    ENG["rote engine<br/>(Python, private network)"]
+    APP["Target app<br/>(LegacyCore)"]
+
+    B --> WEB
+    B --> API
+    S --> API
+    A --> API
+    API --> DB
+    API -->|"shared engine token"| ENG
+    ENG --> APP
+```
+
+- **The control plane** decides **who** can do **what**, and keeps a record of it in PostgreSQL.
+- **The engine** keeps the capability files and the run evidence. The control plane reaches it over a private network using a shared token.
+
+### Layers inside the service
+
+Every request goes through the same layers, top to bottom. Each layer has one job.
+
+```mermaid
+flowchart TB
+    R["HTTP request"] --> MW["Middleware<br/>request id, security headers, CORS, body size limit"]
+    MW --> G["Guards<br/>rate limit, then CSRF, then sign-in check, then role check"]
+    G --> P["Validation pipe<br/>checks the request against its DTO"]
+    P --> C["Controller<br/>routes and status codes only"]
+    C --> SV["Service<br/>business rules, transactions, audit"]
+    SV --> RP["Repository<br/>the only code that talks to Prisma"]
+    SV --> EC["Engine client<br/>validated gateway to the engine"]
+    RP --> PR["Prisma"] --> PG[("PostgreSQL")]
+    EC --> EN["rote engine"]
+    C -.->|result| I["Interceptor<br/>wraps it in the success format"]
+    SV -.->|errors| F["Exception filter<br/>wraps it in the error format"]
+```
+
+| Layer                                  | Rule                                                                                                    |
+| -------------------------------------- | ------------------------------------------------------------------------------------------------------- |
+| **Controller**                         | Handles HTTP only. No business logic and no database access.                                            |
+| **Service**                            | Holds the business rules. Throws `AppException` with a stable error code. Never touches HTTP or Prisma. |
+| **Repository**                         | The only place that uses Prisma. Can join a transaction started by a service.                           |
+| **Engine client**                      | Treats the engine like a data source. Every engine response is validated with zod before use.           |
+| **Guards, pipes, interceptor, filter** | Handle concerns shared by every route, in one place (`src/common/`).                                    |
+
+---
+
+## 📁 Repository structure
+
+### The whole repository
 
 ```text
-HTTP request
-  → middleware      request id (AsyncLocalStorage) · helmet · cookie parser · body limits · CORS
-  → guards          ThrottlerGuard → CsrfGuard → JwtAuthGuard (who) → RolesGuard (what)
-  → pipes           global ValidationPipe (DTOs: whitelist, forbidNonWhitelisted, transform)
-  → controller      HTTP only: route, DTO, @CurrentUser(), status code
-  → service         business rules, coordination, transactions, audit
-  → repository      the only code that touches Prisma
-  → Prisma → PostgreSQL
-  ← interceptor     wraps the result in the success envelope
-  ← exception filter turns every error into the error envelope
+Assessment/
+├── backend/              ◀ this service: NestJS control plane (API + serves the web app)
+├── ui/                   React 19 + Vite web app (built into the backend image)
+├── src/rote/             Python engine: discovery, deterministic replay, handoff, evals
+├── src/mockbank/         LegacyCore mock, the demo target app
+├── capabilities/         capability library (versioned YAML files)
+├── config/               guardrail policy and tenant settings
+├── schemas/              JSON Schemas for engine documents
+├── evals/                eval datasets
+├── evidence/             recorded demonstration runs
+├── docker/               engine Dockerfile
+├── docs/images/          screenshots used in the READMEs
+├── scripts/              ensure-env.sh (secrets) and helper scripts
+├── tests/                Python tests
+├── docker-compose.yml    the full stack
+├── Makefile              every common task (make help)
+└── .github/workflows/    CI pipeline
 ```
 
-| Layer          | Rule                                                                                                                                                                                                          | Where                           |
-| -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------- |
-| Controllers    | No business logic, no database. Return plain data; the interceptor envelopes it.                                                                                                                              | `src/modules/*/*.controller.ts` |
-| Services       | Business rules and transactions. Throw `AppException` with a stable code. Never see HTTP or Prisma.                                                                                                           | `src/modules/*/*.service.ts`    |
-| Repositories   | All Prisma calls. Accept an optional transaction client so services can compose atomic work.                                                                                                                  | `src/modules/*/*.repository.ts` |
-| Engine gateway | The engine is a second data source. `EngineClient` hides HTTP, validates every response with zod (anti-corruption layer), and maps failures to `AppException`. Services use it the way they use repositories. | `src/engine/`                   |
-| Cross-cutting  | Guards, filters, interceptors, pipes, decorators, middleware.                                                                                                                                                 | `src/common/`                   |
-| Configuration  | Zod-validated at startup. The app refuses to boot on a missing or invalid variable.                                                                                                                           | `src/config/`                   |
-
-`PrismaService` is injected only by repositories, `database/` and the readiness probe (`HealthService` → `PrismaService.ping()`). Services use the generated types and enums, never the client. The only raw SQL is that probe's `SELECT 1`.
-
----
-
-## Project structure
+### Inside `backend/`
 
 ```text
 backend/
 ├── src/
-│   ├── main.ts                    bootstrap: logger, configureApp(), listen
-│   ├── app.module.ts              module graph, global guards, throttler, scheduler, static UI
-│   ├── app.setup.ts               the HTTP pipeline (shared verbatim by main.ts and integration tests)
-│   ├── config/                    validation.ts (zod env schema), configuration.ts, database.config.ts,
-│   │                              logger.config.ts (pino + redaction), swagger.config.ts
-│   ├── common/
-│   │   ├── constants/             error codes (API contract), roles and ranking, header/cookie names
-│   │   ├── decorators/            @Public, @OptionalAuth, @MinRole, @CurrentUser, @RawResponse, Swagger helpers
-│   │   ├── dto/                   PaginationQueryDto, ListQueryDto, envelope models
-│   │   ├── exceptions/            AppException (code + client-safe message + details)
-│   │   ├── filters/               AllExceptionsFilter (the error envelope; hides internals)
-│   │   ├── guards/                CsrfGuard, RolesGuard
-│   │   ├── interceptors/          ResponseEnvelopeInterceptor
-│   │   ├── middleware/            request id
-│   │   ├── pipes/                 ValidationPipe factory, engine id / evidence path pipes
-│   │   ├── utils/                 pagination, crypto, request context, strings (LIKE escaping)
-│   │   └── validators/            bounded record validators
-│   ├── database/                  PrismaService (owned pg pool), PrismaModule, JobLeaseRepository
-│   ├── engine/                    EngineClient, zod contracts for engine responses, streaming proxy
-│   ├── health/                    /health, /health/liveness, /health/readiness
-│   ├── generated/prisma/          generated client (git-ignored; `npx prisma generate`)
+│   ├── main.ts                 starts the app
+│   ├── app.module.ts           wires all modules, global guards, rate limiter, scheduler
+│   ├── app.setup.ts            the HTTP pipeline (also used by the integration tests)
+│   ├── config/                 environment validation, typed config, logging, Swagger
+│   ├── common/                 shared code: guards, filters, interceptors, pipes,
+│   │                           decorators, error codes, pagination, utilities
+│   ├── database/               Prisma service, connection pool, job leases
+│   ├── engine/                 client for the Python engine (+ response contracts)
+│   ├── health/                 /health, /health/liveness, /health/readiness
 │   └── modules/
-│       ├── auth/                  login, refresh rotation, logout, password change, strategies, session cleanup
-│       ├── users/                 user management, argon2id hashing
-│       ├── api-keys/              keys for agents and MCP clients
-│       ├── audit/                 append-only audit trail (global module)
-│       ├── runs/                  run index, start runs, SSE, evidence files, operator handoff, background sync
-│       ├── interventions/         handoff queue
-│       ├── capabilities/          library, approval workflow (four-eyes rule)
-│       ├── agents/                tool catalog, invoke, MCP relay
-│       ├── evals/                 datasets, results, start evals
-│       └── platform/              status, policy, evidence index, demo controls
+│       ├── auth/               sign-in, refresh, sign-out, passwords, session cleanup
+│       ├── users/              user management
+│       ├── api-keys/           API keys for agents and scripts
+│       ├── audit/              audit log
+│       ├── runs/               runs, live event stream, evidence files, operator handoff
+│       ├── interventions/      handoff queue
+│       ├── capabilities/       capability library and approvals
+│       ├── agents/             tool catalog, invoke, MCP
+│       ├── evals/              eval datasets and results
+│       └── platform/           status, policy, demo controls
 ├── prisma/
-│   ├── schema.prisma
-│   ├── migrations/
-│   └── seed.ts                    idempotent: first admin (+ optional demo users) from env
+│   ├── schema.prisma           database schema
+│   ├── migrations/             SQL migrations (applied in order)
+│   └── seed.ts                 creates the first admin (+ demo users)
 ├── test/
-│   ├── unit/                      services, guards, filter, interceptor, validation, config, mappers
-│   ├── integration/               real HTTP stack + real Postgres (throwaway schema) + fake engine
-│   └── helpers/
-├── Dockerfile                     multi-stage: ui → deps → build → prod-deps → runtime
-├── prisma.config.ts               Prisma CLI config (migrations, seed)
-├── eslint.config.mjs · prettier.config.js · jest.config.mjs · jest.integration.config.mjs
-├── tsconfig.json · tsconfig.build.json · nest-cli.json
-└── .env.example
+│   ├── unit/                   fast tests, no database
+│   └── integration/            real HTTP + real PostgreSQL + a fake engine
+├── Dockerfile                  multi-stage production image
+├── .env.example                every setting, documented
+└── eslint, prettier, jest, tsconfig, nest-cli configs
 ```
 
-`docker-compose.yml`, `Makefile`, `.github/workflows/ci.yml` and `.pre-commit-config.yaml` live at the repository root because they orchestrate the engine and UI too.
+Each feature module follows the same pattern:
+
+```text
+users/
+├── users.controller.ts   routes
+├── users.service.ts      business rules
+├── users.repository.ts   database queries
+├── users.module.ts       wiring
+├── dto/                  request validation
+└── entities/             response shapes (never includes the password hash)
+```
 
 ---
 
-## Technology choices
+## 🧰 Tech stack
 
-| Concern    | Choice                                                                                                    | Why                                                                                                 |
-| ---------- | --------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------- |
-| Runtime    | Node.js 24 (LTS), ESM                                                                                     | NestJS 12 is ESM-only.                                                                              |
-| Language   | TypeScript, `strict` + `noUncheckedIndexedAccess`, `noImplicitOverride`                                   | No `any` in `src/` (ESLint `no-explicit-any: error`, type-aware rules on).                          |
-| Framework  | NestJS 12 (Express)                                                                                       | Modules, DI, guards, pipes, interceptors and filters map one-to-one onto the required layers.       |
-| Database   | PostgreSQL 17                                                                                             | Relational integrity, `timestamptz`, enums, serializable transactions.                              |
-| ORM        | Prisma 7 with the `pg` driver adapter                                                                     | Typed queries and migrations. The app owns the `pg` pool so it can be sized and closed on shutdown. |
-| Validation | class-validator DTOs (requests); zod (environment, engine responses)                                      | DTOs drive Swagger; zod gives one fail-fast error listing every bad variable.                       |
-| Auth       | Passport (JWT + custom API-key strategy), `@nestjs/jwt` HS256, argon2id                                   | See [Authentication](#authentication-and-authorization).                                            |
-| Security   | helmet (strict CSP; looser only on `/api/docs`), CORS allow-list, `@nestjs/throttler`, double-submit CSRF |                                                                                                     |
-| Logging    | pino via nestjs-pino                                                                                      | JSON lines in production, pretty in development, credential redaction.                              |
-| Docs       | `@nestjs/swagger` with the CLI plugin                                                                     | Generated from the same DTOs the ValidationPipe enforces, so docs cannot drift from validation.     |
-| Jobs       | `@nestjs/schedule` + a database lease                                                                     | Background work runs on one replica without adding Redis.                                           |
-| Tests      | Jest 30 (ESM), supertest                                                                                  | Unit tests with typed mocks; integration tests against real Postgres.                               |
-| Quality    | ESLint (typescript-eslint, type-checked), Prettier, pre-commit hooks                                      | Enforced in CI with `--max-warnings=0`.                                                             |
+| Area               | Choice                                                                                |
+| ------------------ | ------------------------------------------------------------------------------------- |
+| Runtime            | Node.js 24 (LTS), ES modules                                                          |
+| Language           | TypeScript in strict mode. No `any` in the source code.                               |
+| Framework          | NestJS 12 on Express                                                                  |
+| Database           | PostgreSQL 17                                                                         |
+| ORM and migrations | Prisma 7 (with the `pg` driver and a connection pool)                                 |
+| Validation         | class-validator DTOs for requests; zod for environment variables and engine responses |
+| Authentication     | Passport (JWT and API keys), argon2id password hashing                                |
+| Security           | helmet, CORS allow-list, rate limiting, CSRF protection                               |
+| Logging            | pino (JSON in production, readable in development)                                    |
+| API docs           | Swagger / OpenAPI, generated from the code                                            |
+| Background jobs    | `@nestjs/schedule` with a database lease, so only one replica runs each job           |
+| Tests              | Jest 30 and supertest                                                                 |
+| Code quality       | ESLint (type-aware), Prettier, pre-commit hooks                                       |
+| Delivery           | Docker (multi-stage, non-root), Docker Compose, GitHub Actions                        |
 
 ---
 
-## Database schema
+## 💾 Database
 
 ```mermaid
 erDiagram
-    users ||--o{ sessions : "signs in (cascade)"
-    users ||--o{ api_keys : "owns (cascade)"
-    users |o--o{ runs : "requested (set null)"
-    api_keys |o--o{ runs : "via key (set null)"
-    runs ||--o{ interventions : "has (cascade)"
-    users |o--o{ interventions : "claimed (set null)"
-    users |o--o{ capability_approvals : "approved (set null)"
-    users |o--o{ audit_logs : "actor (set null)"
+    users ||--o{ sessions : "signs in"
+    users ||--o{ api_keys : "owns"
+    users |o--o{ runs : "requested"
+    api_keys |o--o{ runs : "started via"
+    runs ||--o{ interventions : "has"
+    users |o--o{ interventions : "claimed"
+    users |o--o{ capability_approvals : "approved"
+    users |o--o{ audit_logs : "acted"
+
+    users {
+        uuid id PK
+        varchar email UK "stored lower-case"
+        varchar name
+        text password_hash "argon2id"
+        enum role "VIEWER to ADMIN"
+        enum status "ACTIVE or DISABLED"
+        int failed_login_attempts
+        timestamptz locked_until
+    }
+    sessions {
+        uuid id PK
+        uuid user_id FK
+        char refresh_token_hash UK "SHA-256"
+        char previous_token_hash UK "reuse detection"
+        timestamptz expires_at
+        timestamptz revoked_at
+    }
+    api_keys {
+        uuid id PK
+        uuid user_id FK
+        varchar prefix UK "public part"
+        char key_hash "SHA-256"
+        enum role
+        timestamptz expires_at
+        timestamptz revoked_at
+    }
+    runs {
+        varchar id PK "engine run id"
+        enum kind
+        enum status
+        enum origin
+        varchar subject "never raw inputs"
+        uuid requested_by_id FK
+        uuid api_key_id FK
+        timestamptz started_at
+    }
+    interventions {
+        uuid id PK
+        varchar run_id FK
+        varchar engine_id
+        enum status
+        uuid claimed_by_id FK
+        varchar resolution
+    }
+    capability_approvals {
+        uuid id PK
+        varchar capability_id
+        varchar version
+        uuid approved_by_id FK
+        varchar reviewer_email "snapshot"
+    }
+    audit_logs {
+        uuid id PK
+        enum actor_type
+        uuid actor_id FK
+        varchar action
+        varchar resource_id
+        enum outcome
+        jsonb metadata
+        timestamptz created_at
+    }
+    job_leases {
+        varchar name PK
+        varchar holder
+        timestamptz expires_at
+    }
 ```
 
-| Table                  | Purpose                                                                                                                  | Keys and constraints                                                     | Indexes                                                                                                 |
-| ---------------------- | ------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------- |
-| `users`                | Accounts. `role` ∈ VIEWER < OPERATOR < REVIEWER < ADMIN; `status` ACTIVE/DISABLED; lockout counters.                     | UUIDv7 PK; `email` unique (stored lower-cased)                           | role, status, created_at                                                                                |
-| `sessions`             | One sign-in on one device: a rotating refresh-token family. Stores SHA-256 hashes, never tokens.                         | `refresh_token_hash` and `previous_token_hash` unique; FK user (cascade) | user_id, expires_at                                                                                     |
-| `api_keys`             | Credentials for agents and MCP clients. Public `prefix` + SHA-256 of the full key; role capped at the owner's.           | `prefix` unique; FK user (cascade)                                       | user_id                                                                                                 |
-| `runs`                 | Index of every engine run (started here, from the CLI, or checked-in evidence), with attribution. Subjects are redacted. | Natural PK = engine run id; FKs requester and API key (set null)         | (started_at desc), (status, started_at desc), kind, tenant, origin, requested_by_id                     |
-| `interventions`        | Human handoffs on runs: the operator queue and its history.                                                              | (run_id, engine_id) unique; FK run (cascade), claimant (set null)        | (status, created_at desc), claimed_by_id                                                                |
-| `capability_approvals` | Who approved which capability version (four-eyes rule). Snapshots the reviewer so it survives user deletion.             | (capability_id, version) unique                                          | approved_by_id                                                                                          |
-| `audit_logs`           | Append-only security trail. Holds identifiers and codes only, never secrets or input values.                             | FK actor (set null)                                                      | (created_at desc), (actor_id, created_at desc), (action, created_at desc), (resource_type, resource_id) |
-| `job_leases`           | Leader election for background jobs across replicas.                                                                     | PK `name`                                                                | —                                                                                                       |
+| Table                  | Stores                                                                                          |
+| ---------------------- | ----------------------------------------------------------------------------------------------- |
+| `users`                | Accounts, roles, status and lockout counters                                                    |
+| `sessions`             | One row per sign-in. Only hashes of tokens are stored. Cleaned up 30 days after a session ends. |
+| `api_keys`             | Keys for agents and scripts. Only a hash of each key is stored.                                 |
+| `runs`                 | Index of every engine run, with who started it                                                  |
+| `interventions`        | Human handoffs on runs                                                                          |
+| `capability_approvals` | Who approved which capability version                                                           |
+| `audit_logs`           | Security events (never passwords, tokens or input values)                                       |
+| `job_leases`           | Makes sure only one replica runs each background job                                            |
 
-All timestamps are `timestamptz(3)`. Mutable tables have `created_at` and `updated_at`; the append-only `audit_logs` and `capability_approvals` have `created_at`; `job_leases` has `expires_at` and `updated_at`. Deleting a user removes their sessions and keys; runs, approvals and audit rows keep a snapshot and null the FK.
+**Good to know**
 
-Migrations live in `prisma/migrations/`. CI applies them to a fresh database and fails if `schema.prisma` has drifted from them.
+- IDs are UUIDv7 (time-ordered). Timestamps are `timestamptz`.
+- Every foreign key is real and enforced. Deleting a user removes their sessions and keys, while runs, approvals and audit rows keep a snapshot.
+- Columns that are searched or sorted often are indexed: `email`, `(status, started_at)`, `(action, created_at)` and others.
+- Lists use one query for the page and one for the count, with no N+1 queries. Rules that must not race, such as "always keep one admin", run in serializable transactions.
+
+**Migrations**
+
+```bash
+cd backend
+npx prisma migrate dev --name add_something   # after editing schema.prisma (development)
+npx prisma migrate deploy                     # apply pending migrations (CI and production)
+npx prisma studio                             # browse the data
+```
 
 ---
 
-## API
+## 🔌 API
 
-### Conventions
+### The basics
 
-- **Base path:** `/api/v1`. The version is URI-based (`VersioningType.URI`, default `1`), so a `@Version('2')` controller can add `/api/v2/...` alongside v1 without breaking it. Health probes are unversioned at `/health`.
-- **JSON in, JSON out.** Bodies are capped at 256 kB.
-- **Success envelope:**
-  ```json
-  { "success": true, "data": {}, "message": "Request successful" }
-  ```
-- **Collections** (`?page=1&limit=20`, limit ≤ 100):
-  ```json
-  { "success": true, "data": [], "meta": { "page": 1, "limit": 20, "total": 100, "totalPages": 5 } }
-  ```
-- **Errors** (every error, whatever raised it):
-  ```json
-  {
-    "success": false,
-    "message": "User not found",
-    "error": { "code": "USER_NOT_FOUND" },
-    "timestamp": "2026-10-04T00:00:00.000Z",
-    "path": "/api/v1/users/0192…",
-    "requestId": "0f8d3c1e-…"
-  }
-  ```
-  Clients branch on `error.code`, never on `message`. Codes are listed in `src/common/constants/error-codes.ts` and in the OpenAPI schema. `VALIDATION_ERROR` lists every invalid field in `error.details`. Unexpected errors return `INTERNAL_SERVER_ERROR` with the request id. The stack, SQL and driver messages are logged, never returned. Database outages return `503 DATABASE_UNAVAILABLE`.
-- **Lists** accept `search`, `sortBy` (a per-resource allow-list, mapped explicitly to Prisma `orderBy`) and `sortOrder=asc|desc`, plus resource filters such as `status`, `role`, `kind` or `tenant`. Unknown query parameters are rejected.
-- **Exceptions to the envelope:** health probes, streams (SSE), files and images, and MCP (JSON-RPC). These are marked `@RawResponse()`.
+- All endpoints live under **`/api/v1`**. A future `/api/v2` can run side by side without breaking v1.
+- Requests and responses are JSON. Bodies are limited to 256 kB.
+- Every request body and query string is validated. Unknown fields are rejected.
+- Full, interactive docs are at **`/api/docs`**.
+
+### Response format
+
+**Success**
+
+```json
+{
+  "success": true,
+  "data": { "id": "…", "email": "dana@example.com" },
+  "message": "Request successful"
+}
+```
+
+**List** (use `?page=1&limit=20`, up to 100 per page)
+
+```json
+{ "success": true, "data": [ … ], "meta": { "page": 1, "limit": 20, "total": 100, "totalPages": 5 } }
+```
+
+**Error**
+
+```json
+{
+  "success": false,
+  "message": "User not found",
+  "error": { "code": "USER_NOT_FOUND" },
+  "timestamp": "2026-10-04T00:00:00.000Z",
+  "path": "/api/v1/users/0192f0a4-…",
+  "requestId": "0f8d3c1e-6b1a-4f43-9d0b-6a3f7b2e9c11"
+}
+```
+
+Check `error.code` in your code, not `message`. Codes never change meaning. Lists also accept `search`, `sortBy`, `sortOrder` (`asc` or `desc`) and filters such as `status` or `role`. Only known columns can be used for sorting.
+
+### Status codes
+
+| Status                | Common codes                                                                | Meaning                                                                      |
+| --------------------- | --------------------------------------------------------------------------- | ---------------------------------------------------------------------------- |
+| 200 / 201 / 202 / 204 | —                                                                           | Success (OK, created, accepted, no content)                                  |
+| 400                   | `VALIDATION_ERROR`, `MALFORMED_JSON`                                        | The request is invalid; `error.details` lists every bad field                |
+| 401                   | `UNAUTHORIZED`, `INVALID_CREDENTIALS`, `SESSION_EXPIRED`, `INVALID_API_KEY` | Not signed in, or the credentials are wrong or expired                       |
+| 403                   | `INSUFFICIENT_ROLE`, `CSRF_TOKEN_INVALID`, `SELF_APPROVAL_FORBIDDEN`        | Signed in, but not allowed                                                   |
+| 404                   | `NOT_FOUND`, `USER_NOT_FOUND`, `ROUTE_NOT_FOUND`                            | Doesn't exist                                                                |
+| 409                   | `EMAIL_ALREADY_EXISTS`, `LAST_ADMIN`, `LEASE_CONFLICT`                      | Conflicts with the current state                                             |
+| 422                   | `INPUT_CONTRACT_VIOLATION`                                                  | Capability inputs don't match its contract                                   |
+| 429                   | `RATE_LIMITED`                                                              | Too many requests                                                            |
+| 500                   | `INTERNAL_SERVER_ERROR`                                                     | Unexpected; quote the `requestId`. No stack traces or SQL are ever returned. |
+| 503                   | `DATABASE_UNAVAILABLE`, `ENGINE_UNAVAILABLE`                                | A dependency is down                                                         |
 
 ### Endpoints
 
-"Any" means any authenticated user (VIEWER and up). Roles are ranked, so a higher role always passes.
+| Group            | Main endpoints                                                                             | Who                                |
+| ---------------- | ------------------------------------------------------------------------------------------ | ---------------------------------- |
+| **Auth**         | `POST /auth/login`, `/auth/refresh`, `/auth/logout`, `GET /auth/me`, `POST /auth/password` | everyone                           |
+| **Users**        | `GET/POST /users`, `GET/PATCH/DELETE /users/:id`, `GET/PATCH /users/me`                    | admins (anyone for `/me`)          |
+| **API keys**     | `GET/POST /api-keys`, `DELETE /api-keys/:id`                                               | everyone, for their own keys       |
+| **Audit**        | `GET /audit-logs`                                                                          | admins                             |
+| **Runs**         | `GET/POST /runs`, `GET /runs/:id`, `/runs/:id/stream` (live events), `/runs/:id/files/*`   | read: everyone; start: operators   |
+| **Handoff**      | `/runs/:id/operator/…` (watch, claim, input, resolve), `GET /interventions`                | watch: everyone; act: operators    |
+| **Capabilities** | `GET /capabilities[/:id]`, `POST /capabilities/:ref/approve`                               | read: everyone; approve: reviewers |
+| **Agents**       | `GET /agents/tools`, `POST /capabilities/:id/invoke`, `/mcp`                               | invoke and MCP: operators          |
+| **Evals**        | `GET /evals/…`, `POST /evals/runs`                                                         | start: reviewers                   |
+| **Platform**     | `GET /status`, `/policy`, `/evidence`, `/demo/…`                                           | everyone                           |
+| **Health**       | `GET /health`, `/health/liveness`, `/health/readiness`                                     | public, no `/api/v1` prefix        |
 
-| Method                                                      | Path                                                                              | Role                                                | Purpose                                                             |
-| ----------------------------------------------------------- | --------------------------------------------------------------------------------- | --------------------------------------------------- | ------------------------------------------------------------------- |
-| **auth**                                                    |                                                                                   |                                                     |                                                                     |
-| GET                                                         | `/auth/options`                                                                   | public                                              | Whether sign-up and demo controls are enabled                       |
-| POST                                                        | `/auth/register`                                                                  | public (if `AUTH_ALLOW_SIGNUP`)                     | Create a VIEWER account and sign in                                 |
-| POST                                                        | `/auth/login`                                                                     | public                                              | Sign in: session cookies + access token                             |
-| POST                                                        | `/auth/refresh`                                                                   | refresh cookie + CSRF                               | Rotate the refresh token, new access token                          |
-| POST                                                        | `/auth/logout`                                                                    | optional                                            | Revoke the session (by access token or refresh cookie); always 204  |
-| GET                                                         | `/auth/me`                                                                        | any                                                 | The caller and their effective role                                 |
-| POST                                                        | `/auth/password`                                                                  | any (not API keys)                                  | Change password; signs out other sessions                           |
-| **users**                                                   |                                                                                   |                                                     |                                                                     |
-| GET                                                         | `/users`                                                                          | ADMIN                                               | List: search, `role`, `status`, sort, paginate                      |
-| POST                                                        | `/users`                                                                          | ADMIN                                               | Create a user with a role                                           |
-| GET / PATCH                                                 | `/users/me`                                                                       | any                                                 | Own record / update display name                                    |
-| GET                                                         | `/users/:id`                                                                      | ADMIN, or self                                      | One user (others get 404, not 403)                                  |
-| PATCH                                                       | `/users/:id`                                                                      | ADMIN                                               | Name, role, status (no self-demotion; never the last admin)         |
-| DELETE                                                      | `/users/:id`                                                                      | ADMIN                                               | Delete (not self; never the last admin)                             |
-| **api-keys**                                                |                                                                                   |                                                     |                                                                     |
-| GET                                                         | `/api-keys`                                                                       | any                                                 | Own keys (admins: `?userId=` / `?all=true`)                         |
-| POST                                                        | `/api-keys`                                                                       | any (session only)                                  | Create; the secret is returned once                                 |
-| DELETE                                                      | `/api-keys/:id`                                                                   | owner or ADMIN                                      | Revoke                                                              |
-| **audit**                                                   |                                                                                   |                                                     |                                                                     |
-| GET                                                         | `/audit-logs`                                                                     | ADMIN                                               | Filter by action, actor, resource, outcome, time range              |
-| **runs**                                                    |                                                                                   |                                                     |                                                                     |
-| GET                                                         | `/runs`                                                                           | any                                                 | Index: status, kind, tenant, origin, `requestedBy=me`, search, sort |
-| POST                                                        | `/runs`                                                                           | OPERATOR (discovery, probe, `allowDraft`: REVIEWER) | Start a run                                                         |
-| GET                                                         | `/runs/:id`                                                                       | any                                                 | Run with result, interventions, files                               |
-| GET                                                         | `/runs/:id/stream`                                                                | any                                                 | Server-Sent Events                                                  |
-| GET                                                         | `/runs/:id/files/*path`                                                           | any                                                 | Evidence file (sandboxing CSP on HTML)                              |
-| GET                                                         | `/runs/:id/operator/{state,screen,live.jpg}`                                      | any (live screen masked below OPERATOR)             | Watch a live handoff                                                |
-| GET                                                         | `/runs/:id/operator/interventions/:iid[/screenshot]`                              | any                                                 | One intervention                                                    |
-| POST                                                        | `/runs/:id/operator/interventions/:iid/claim`                                     | OPERATOR                                            | Take the lease (in the caller's name)                               |
-| POST                                                        | `/runs/:id/operator/input`                                                        | OPERATOR (lease holder)                             | Click / type / key / dialog                                         |
-| POST                                                        | `/runs/:id/operator/interventions/:iid/resolve`                                   | OPERATOR (lease holder)                             | Hand back with a resolution                                         |
-| GET                                                         | `/interventions`                                                                  | any                                                 | Handoff queue across runs                                           |
-| **capabilities and agents**                                 |                                                                                   |                                                     |                                                                     |
-| GET                                                         | `/capabilities`, `/capabilities/:id`, `/capabilities/:id/approvals`               | any                                                 | Library, review sheet, approval history                             |
-| POST                                                        | `/capabilities/:ref/approve`                                                      | REVIEWER                                            | Approve a draft (four-eyes rule)                                    |
-| POST                                                        | `/capabilities/:id/invoke`                                                        | OPERATOR                                            | Invoke; 200 with the result or 202 + `Location`                     |
-| GET                                                         | `/agents/tools`, `/agents/catalog`                                                | any                                                 | Approved capabilities as tool definitions                           |
-| GET / POST / DELETE                                         | `/mcp`                                                                            | OPERATOR                                            | MCP Streamable HTTP relay (use an API key)                          |
-| **evals and platform**                                      |                                                                                   |                                                     |                                                                     |
-| GET                                                         | `/evals/datasets[/:id]`, `/evals/results[/:id]`, `/evals/results/:id/files/*path` | any                                                 | Datasets and results                                                |
-| POST                                                        | `/evals/runs`                                                                     | REVIEWER                                            | Start an eval (one at a time)                                       |
-| GET                                                         | `/status`, `/policy`, `/evidence`                                                 | any                                                 | Engine environment, guardrails, evidence index                      |
-| GET / PUT                                                   | `/demo/members`, `/demo/faults/:tenant`                                           | any / OPERATOR                                      | Mock controls (only when `DEMO_ENABLED`)                            |
-| **health** (unversioned, unauthenticated, not rate-limited) |                                                                                   |                                                     |                                                                     |
-| GET                                                         | `/health`                                                                         | public                                              | `ok`, `degraded` (engine down) or `error` (database down, 503)      |
-| GET                                                         | `/health/liveness`                                                                | public                                              | The process responds. Touches no dependencies.                      |
-| GET                                                         | `/health/readiness`                                                               | public                                              | The database answers (503 if not)                                   |
+<details>
+<summary><b>Full endpoint list (48 paths)</b></summary>
 
-The OpenAPI document at `/api/docs` is authoritative. It documents every request body, query parameter, response model, error status and security scheme.
+| Method            | Path                                                                              | Role                                          | Purpose                                                  |
+| ----------------- | --------------------------------------------------------------------------------- | --------------------------------------------- | -------------------------------------------------------- |
+| GET               | `/auth/options`                                                                   | public                                        | Whether sign-up and demo controls are on                 |
+| POST              | `/auth/register`                                                                  | public (if `AUTH_ALLOW_SIGNUP`)               | Create a Viewer account and sign in                      |
+| POST              | `/auth/login`                                                                     | public                                        | Sign in: cookies + access token                          |
+| POST              | `/auth/refresh`                                                                   | refresh cookie + CSRF                         | New access token; rotates the refresh token              |
+| POST              | `/auth/logout`                                                                    | optional                                      | Revoke the session; always 204                           |
+| GET               | `/auth/me`                                                                        | any                                           | You, and the role this request acts with                 |
+| POST              | `/auth/password`                                                                  | any (not API keys)                            | Change password; signs out other sessions                |
+| GET               | `/users`                                                                          | Admin                                         | List: search, `role`, `status`, sort, pages              |
+| POST              | `/users`                                                                          | Admin                                         | Create a user with a role                                |
+| GET, PATCH        | `/users/me`                                                                       | any                                           | Your record; change your display name                    |
+| GET               | `/users/:id`                                                                      | Admin, or yourself                            | One user                                                 |
+| PATCH             | `/users/:id`                                                                      | Admin                                         | Change name, role or status                              |
+| DELETE            | `/users/:id`                                                                      | Admin                                         | Delete (never yourself, never the last admin)            |
+| GET               | `/api-keys`                                                                       | any                                           | Your keys (admins: `?userId=` or `?all=true`)            |
+| POST              | `/api-keys`                                                                       | any (signed in, not with a key)               | Create; the secret is shown once                         |
+| DELETE            | `/api-keys/:id`                                                                   | owner or Admin                                | Revoke                                                   |
+| GET               | `/audit-logs`                                                                     | Admin                                         | Filter by action, actor, resource, outcome, dates        |
+| GET               | `/runs`                                                                           | any                                           | Filter by status, kind, tenant, origin, `requestedBy=me` |
+| POST              | `/runs`                                                                           | Operator (discovery, probe, drafts: Reviewer) | Start a run                                              |
+| GET               | `/runs/:id`                                                                       | any                                           | A run with its result and files                          |
+| GET               | `/runs/:id/stream`                                                                | any                                           | Live events (Server-Sent Events)                         |
+| GET               | `/runs/:id/files/*path`                                                           | any                                           | One evidence file                                        |
+| GET               | `/runs/:id/operator/state`, `/screen`, `/live.jpg`                                | any (screen blurred below Operator)           | Watch a live handoff                                     |
+| GET               | `/runs/:id/operator/interventions/:iid[/screenshot]`                              | any                                           | One handoff                                              |
+| POST              | `/runs/:id/operator/interventions/:iid/claim`                                     | Operator                                      | Take control of the live session                         |
+| POST              | `/runs/:id/operator/input`                                                        | Operator (in control)                         | Click, type, press a key                                 |
+| POST              | `/runs/:id/operator/interventions/:iid/resolve`                                   | Operator (in control)                         | Hand back control                                        |
+| GET               | `/interventions`                                                                  | any                                           | Handoff queue                                            |
+| GET               | `/capabilities`, `/capabilities/:id`, `/capabilities/:id/approvals`               | any                                           | Library, details, approval history                       |
+| POST              | `/capabilities/:ref/approve`                                                      | Reviewer                                      | Approve a draft (not your own)                           |
+| POST              | `/capabilities/:id/invoke`                                                        | Operator                                      | Run a capability and wait for the result                 |
+| GET               | `/agents/tools`, `/agents/catalog`                                                | any                                           | Capabilities as tool definitions for agents              |
+| GET, POST, DELETE | `/mcp`                                                                            | Operator                                      | MCP endpoint for AI agents                               |
+| GET               | `/evals/datasets[/:id]`, `/evals/results[/:id]`, `/evals/results/:id/files/*path` | any                                           | Eval datasets and results                                |
+| POST              | `/evals/runs`                                                                     | Reviewer                                      | Start an eval                                            |
+| GET               | `/status`, `/policy`, `/evidence`                                                 | any                                           | Environment, guardrails, evidence index                  |
+| GET, PUT          | `/demo/members`, `/demo/faults/:tenant`                                           | any; PUT needs Operator                       | Demo controls (when `DEMO_ENABLED`)                      |
+| GET               | `/health`, `/health/liveness`, `/health/readiness`                                | public                                        | Health checks                                            |
+
+</details>
 
 ---
 
-## Authentication and authorization
+## 🔐 Authentication and roles
 
-### Credentials
+### How sign-in works
 
-| Client                        | Credential                                | Sent as                                                                                                                                                                                       |
-| ----------------------------- | ----------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Browser (the UI)              | Session cookies from `POST /auth/login`   | `rote_at` (access JWT, httpOnly) on every request; `rote_rt` (refresh token, httpOnly, path `/api/v1/auth`) only to auth endpoints; `rote_csrf` (readable) echoed as `X-CSRF-Token` on writes |
-| Script, short-lived           | The `accessToken` from the login response | `Authorization: Bearer <jwt>`                                                                                                                                                                 |
-| Agent, MCP client, automation | An API key from `POST /api-keys`          | `Authorization: Bearer rote_…` or `X-API-Key: rote_…`                                                                                                                                         |
+```mermaid
+sequenceDiagram
+    autonumber
+    actor U as User
+    participant API as Control plane
+    participant DB as PostgreSQL
 
-All cookies are `SameSite=Strict`, and `Secure` by default in production.
+    U->>API: POST /auth/login (email, password)
+    API->>DB: Find the user and check the argon2id hash
+    API->>DB: Create a session (only a hash of the refresh token is stored)
+    API-->>U: 200 with an access token and cookies
 
-### Flow
+    U->>API: GET /runs (cookie or Bearer token)
+    API->>DB: Load the session and user. Revoked? Disabled? Which role?
+    API-->>U: 200 with the data
 
-```text
-POST /auth/login {email, password}
-  → user by email; argon2id verify (unknown emails verify against a dummy hash: equal timing)
-  → failures increment a counter; AUTH_MAX_FAILED_LOGINS locks the account for AUTH_LOCKOUT_MINUTES
-    (every failure, including "locked", returns the same INVALID_CREDENTIALS)
-  → create a session row (refresh token stored as SHA-256), issue:
-       access JWT  {sub: userId, sid: sessionId, typ: "access"}, HS256, iss/aud checked, 15 min
-       refresh token  256-bit opaque, 7 days
-       CSRF token
+    Note over U,API: The access token expires after 15 minutes
+    U->>API: POST /auth/refresh (refresh cookie + CSRF token)
+    API->>DB: Swap in a new refresh token. Reusing an old one revokes the session.
+    API-->>U: 200 with new tokens
 
-Every request
-  → ThrottlerGuard   per-IP limits; stricter `auth` bucket on login/register/password
-  → CsrfGuard        cookie-authenticated writes must echo rote_csrf; bearer/API-key requests skip it
-  → JwtAuthGuard     API key strategy first, then JWT (bearer, then cookie).
-                     The JWT's session is loaded from the database: it must exist, be unrevoked and
-                     unexpired, and its user must be ACTIVE. Role comes from the database, not the token,
-                     so demotion, disabling and sign-out take effect immediately.
-  → RolesGuard       @MinRole(...) against the user's current role (capped by the API key's role)
-
-POST /auth/refresh  (refresh cookie + CSRF)
-  → compare-and-set rotation: the old hash moves to previous_token_hash
-  → presenting a previous token again means it leaked: the whole session is revoked (REFRESH_TOKEN_REUSED)
-
-POST /auth/logout   (@OptionalAuth)
-  → revokes the session behind the access token (cookie or bearer), else behind the refresh cookie
+    U->>API: POST /auth/logout
+    API->>DB: Revoke the session
+    API-->>U: 204
 ```
 
-**API keys** look like `rote_<8 hex>_<43 chars>`. The prefix is a public lookup id; only the SHA-256 of the whole key is stored, compared in constant time. A key's role is fixed at creation (at most the creator's) and is further capped at the owner's **current** role on every request. Keys cannot create keys or change passwords.
+### Three ways to authenticate
 
-**Authorization** is server-side only. Roles come from the database on every request, never from the client. Routes declare the lowest role they accept with `@MinRole`. Rules that depend on the payload live in services: discovery needs REVIEWER, admins cannot demote themselves, the last active admin is protected, and a reviewer cannot approve a version recorded by a run they started.
+| Client                       | How                                                   | Details                                                                                                                                                                              |
+| ---------------------------- | ----------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **Browser**                  | Cookies set by `/auth/login`                          | `rote_at` (access, httpOnly), `rote_rt` (refresh, httpOnly, sent only to `/api/v1/auth`), `rote_csrf` (sent back as the `X-CSRF-Token` header on writes). All are `SameSite=Strict`. |
+| **Script**                   | `Authorization: Bearer <accessToken>`                 | The token from the login response. Lasts 15 minutes.                                                                                                                                 |
+| **Agent / MCP / automation** | `Authorization: Bearer rote_…` or `X-API-Key: rote_…` | Create one with `POST /api-keys`. It can expire, and it can be revoked at any time.                                                                                                  |
 
-Passwords: argon2id (OWASP baseline: 19 MiB, t=2, p=1), 12–128 characters, not only letters or only digits. Hashes are rehashed transparently when parameters change, and never leave the repository layer: entities are mapped to response DTOs through an allow-list.
+### Roles
 
----
+Roles are ranked. Each role can do everything the roles above it in this table can.
 
-## Configuration
+| What you can do                                             | Viewer | Operator | Reviewer | Admin |
+| ----------------------------------------------------------- | :----: | :------: | :------: | :---: |
+| See runs, capabilities, evals, status and the handoff queue |   ✅   |    ✅    |    ✅    |  ✅   |
+| Start replays, invoke capabilities, use MCP                 |        |    ✅    |    ✅    |  ✅   |
+| Take over a live handoff and see the unblurred screen       |        |    ✅    |    ✅    |  ✅   |
+| Run discovery or probe, run unapproved drafts, start evals  |        |          |    ✅    |  ✅   |
+| Approve capabilities (not your own recordings)              |        |          |    ✅    |  ✅   |
+| Manage users, see everyone's API keys, read the audit log   |        |          |          |  ✅   |
 
-Copy `.env.example` to `.env` (or run `make env` at the repo root, which generates every secret). Every variable is validated at startup (`src/config/validation.ts`). A missing or invalid value stops the app with a list of every problem. In `production` and `test`, `.env` is ignored and only the real environment is read.
+### Security built in
 
-| Variable                                          | Default                       | Notes                                                                                       |
-| ------------------------------------------------- | ----------------------------- | ------------------------------------------------------------------------------------------- |
-| `NODE_ENV`                                        | `development`                 | `development` \| `production` \| `test`                                                     |
-| `PORT` / `HOST`                                   | `3000` / `0.0.0.0`            |                                                                                             |
-| `LOG_LEVEL`                                       | `info`                        | `trace` (also logs SQL) … `fatal`, `silent`                                                 |
-| `PUBLIC_URL`                                      | `http://localhost:3000`       | Base URL users reach; used in links. `https://` enables HSTS and upgrade-insecure-requests. |
-| `CORS_ORIGIN`                                     | empty (no cross-origin)       | Comma-separated allow-list. The UI is same-origin and needs nothing.                        |
-| `TRUST_PROXY`                                     | `0`                           | Number of proxies in front (correct client IPs for rate limits and audit)                   |
-| `DATABASE_URL`                                    | **required**                  | `postgresql://user:pass@host:5432/db?schema=public`                                         |
-| `DATABASE_POOL_MAX`                               | `10`                          | Per instance. Keep `replicas × pool` below Postgres `max_connections`.                      |
-| `DATABASE_CONNECTION_TIMEOUT_MS`                  | `5000`                        |                                                                                             |
-| `JWT_SECRET`                                      | **required**                  | ≥ 32 characters; placeholder values are rejected. Rotating it signs everyone out.           |
-| `JWT_EXPIRES_IN`                                  | `15m`                         | Access token lifetime (`900s`, `15m`, `1h`)                                                 |
-| `JWT_ISSUER` / `JWT_AUDIENCE`                     | `rote-control-plane` / `rote` | Checked on every token                                                                      |
-| `REFRESH_TOKEN_TTL_DAYS`                          | `7`                           |                                                                                             |
-| `COOKIE_SECURE`                                   | `true` in production          | Set `false` only for plain-http localhost                                                   |
-| `AUTH_ALLOW_SIGNUP`                               | `false`                       | Self-service VIEWER accounts                                                                |
-| `AUTH_MAX_FAILED_LOGINS` / `AUTH_LOCKOUT_MINUTES` | `5` / `15`                    |                                                                                             |
-| `APPROVAL_REQUIRE_SEPARATE_REVIEWER`              | `true`                        | Four-eyes rule for capability approval                                                      |
-| `ENGINE_URL`                                      | `http://127.0.0.1:8700`       |                                                                                             |
-| `ENGINE_TOKEN`                                    | required in production        | Shared secret with the engine, ≥ 16 characters                                              |
-| `ENGINE_TIMEOUT_MS`                               | `15000`                       | Default per engine call (streams have none)                                                 |
-| `ENGINE_ALLOW_HEADED`                             | `false`                       | Allow visible browser windows on the engine host                                            |
-| `RUN_SYNC_ENABLED` / `RUN_SYNC_INTERVAL_MS`       | `true` / `5000`               | Background run-index sync                                                                   |
-| `DEMO_ENABLED`                                    | `false`                       | Fault injection and sample members for the bundled mock                                     |
-| `SWAGGER_ENABLED`                                 | `true`                        | Serve `/api/docs`                                                                           |
-| `RATE_LIMIT_TTL_MS` / `RATE_LIMIT_MAX`            | `60000` / `600`               | Global per-IP window                                                                        |
-| `AUTH_RATE_LIMIT_MAX`                             | `10`                          | Per-IP window on credential endpoints                                                       |
-| `UI_DIST_PATH`                                    | empty                         | Built UI to serve at `/` (the Docker image sets it)                                         |
-
-Seed only (`prisma/seed.ts`; the running app never reads these): `SEED_ADMIN_EMAIL` (default `admin@rote.local`), `SEED_ADMIN_NAME`, `SEED_ADMIN_PASSWORD` (**required**, same password policy), `SEED_DEMO_USERS`, `SEED_DEMO_PASSWORD` (reviewer@, operator@, viewer@rote.local).
+- Passwords are hashed with **argon2id** and never returned by the API. They must be 12–128 characters, and not only letters or only digits.
+- Every sign-in failure returns the **same answer in the same time**, so attackers can't tell which emails exist.
+- **Lockout:** 5 failed logins lock the account for 15 minutes.
+- The user's **role is read from the database** on every request, so demoting or disabling someone works immediately.
+- **Refresh tokens rotate.** If a stolen token is used again, the session is revoked.
+- **API keys** are stored as hashes and capped at their owner's current role.
+- **CSRF protection** for cookie-based requests; **rate limits** per IP, stricter on sign-in.
+- **Security headers** (helmet and CSP), a **CORS allow-list** and **request size limits**.
+- **Logs never contain** passwords, tokens, cookies or API keys; they are redacted.
 
 ---
 
-## Local development
+## 🔧 Configuration
 
-Prerequisites: Node.js 24, Docker (for Postgres). Python/uv is needed only to run the engine.
+All settings come from environment variables. The app checks them at startup and **refuses to start** with a clear list if any are missing or invalid. Use `.env.example` as the template; `make env` creates `.env` for you.
+
+**Required**
+
+| Variable              | Example                                                      | Notes                                                    |
+| --------------------- | ------------------------------------------------------------ | -------------------------------------------------------- |
+| `DATABASE_URL`        | `postgresql://rote:secret@localhost:5433/rote?schema=public` | PostgreSQL connection                                    |
+| `JWT_SECRET`          | 48 random characters                                         | At least 32 characters. Placeholder values are rejected. |
+| `ENGINE_TOKEN`        | 32 random characters                                         | Required in production. Shared with the engine.          |
+| `SEED_ADMIN_PASSWORD` | 18 random characters                                         | Only for the seed script: the first admin's password     |
+
+<details>
+<summary><b>All optional settings (with defaults)</b></summary>
+
+| Variable                                          | Default                           | What it does                                                                 |
+| ------------------------------------------------- | --------------------------------- | ---------------------------------------------------------------------------- |
+| `NODE_ENV`                                        | `development`                     | `development`, `production` or `test`                                        |
+| `PORT` / `HOST`                                   | `3000` / `0.0.0.0`                | Where the server listens                                                     |
+| `LOG_LEVEL`                                       | `info`                            | `trace` (also logs SQL), `debug`, `info`, `warn`, `error`, `fatal`, `silent` |
+| `PUBLIC_URL`                                      | `http://localhost:3000`           | The address users reach. With `https://`, HSTS is turned on.                 |
+| `CORS_ORIGIN`                                     | empty                             | Comma-separated origins allowed to call the API from another site            |
+| `TRUST_PROXY`                                     | `0`                               | How many proxies sit in front, for correct client IPs                        |
+| `DATABASE_POOL_MAX`                               | `10`                              | Connections per instance                                                     |
+| `DATABASE_CONNECTION_TIMEOUT_MS`                  | `5000`                            |                                                                              |
+| `JWT_EXPIRES_IN`                                  | `15m`                             | Access token lifetime                                                        |
+| `JWT_ISSUER` / `JWT_AUDIENCE`                     | `rote-control-plane` / `rote`     | Checked on every token                                                       |
+| `REFRESH_TOKEN_TTL_DAYS`                          | `7`                               | How long a sign-in lasts                                                     |
+| `COOKIE_SECURE`                                   | `true` in production              | Set `false` only for plain-http localhost                                    |
+| `AUTH_ALLOW_SIGNUP`                               | `false`                           | Allow self sign-up (as Viewer)                                               |
+| `AUTH_MAX_FAILED_LOGINS` / `AUTH_LOCKOUT_MINUTES` | `5` / `15`                        | Lockout policy                                                               |
+| `APPROVAL_REQUIRE_SEPARATE_REVIEWER`              | `true`                            | The four-eyes rule                                                           |
+| `ENGINE_URL`                                      | `http://127.0.0.1:8700`           | Where the engine is                                                          |
+| `ENGINE_TIMEOUT_MS`                               | `15000`                           | Default timeout for engine calls                                             |
+| `ENGINE_ALLOW_HEADED`                             | `false`                           | Allow visible browser windows on the engine host                             |
+| `RUN_SYNC_ENABLED` / `RUN_SYNC_INTERVAL_MS`       | `true` / `5000`                   | Background sync of the run index                                             |
+| `DEMO_ENABLED`                                    | `false`                           | Demo controls for the mock app                                               |
+| `SWAGGER_ENABLED`                                 | `true`                            | Serve `/api/docs`                                                            |
+| `RATE_LIMIT_TTL_MS` / `RATE_LIMIT_MAX`            | `60000` / `600`                   | General rate limit per IP                                                    |
+| `AUTH_RATE_LIMIT_MAX`                             | `10`                              | Rate limit per IP on sign-in endpoints                                       |
+| `UI_DIST_PATH`                                    | empty                             | Folder of the built web app to serve at `/`                                  |
+| `SEED_ADMIN_EMAIL` / `SEED_ADMIN_NAME`            | `admin@rote.local` / `Rote Admin` | Seed only                                                                    |
+| `SEED_DEMO_USERS` / `SEED_DEMO_PASSWORD`          | `false` / —                       | Seed only: also create the three demo accounts                               |
+
+</details>
+
+> Never commit `.env`. It is git-ignored, and so are `node_modules/`, `dist/`, `coverage/` and logs.
+
+---
+
+## 🧪 Testing
 
 ```bash
-# from the repository root
-make env            # creates .env and backend/.env with generated secrets (never prints or overwrites them)
-make db             # Postgres 17 on 127.0.0.1:5433 (POSTGRES_HOST_PORT)
-make migrate        # npm ci (first time) + prisma generate + migrate deploy + seed
-
 cd backend
-npm run start:dev   # watch mode on PORT from backend/.env; pretty logs
+npm run test:unit          # fast: no database needed
+npm run test:integration   # real PostgreSQL: run `make db` first
+npm run test:cov           # unit tests with a coverage report
 ```
 
-For runs, capabilities and evals the engine must be running too: `make bank` and `make engine` in two more terminals. Without it those endpoints answer `503 ENGINE_UNAVAILABLE` and `/health` reports `degraded`, while identity, users, keys and audit keep working. For the UI with hot reload, run `make ui-dev` (Vite on :5173, proxying `/api` and `/health` here).
+```mermaid
+flowchart LR
+    subgraph Unit["Unit tests (no database)"]
+        U1[Services and business rules]
+        U2[Guards, filters, interceptor]
+        U3[Validation and config]
+    end
+    subgraph Integration["Integration tests"]
+        I1[Real HTTP requests] --> I2[Controllers, guards, services] --> I3[Repositories] --> I4[("Real PostgreSQL<br/>(temporary schema)")]
+    end
+```
 
-| Task                                        | Command                                          |
-| ------------------------------------------- | ------------------------------------------------ |
-| New migration after editing `schema.prisma` | `npx prisma migrate dev --name <change>`         |
-| Regenerate the client                       | `npx prisma generate`                            |
-| Browse data                                 | `npx prisma studio`                              |
-| Lint / fix                                  | `npm run lint` / `npm run lint:fix`              |
-| Format                                      | `npm run format` (check: `npm run format:check`) |
-| Type check                                  | `npm run typecheck`                              |
-| Install git hooks (repo root)               | `make hooks`                                     |
+- **Unit tests** check business rules with mocked dependencies: user rules, sign-in and lockout, API keys, approvals, guards, error mapping, validation and config.
+- **Integration tests** boot the real app with the same pipeline as production and call it over HTTP. Each run creates its own temporary database schema and deletes it afterwards, so your data is never touched. A fake engine stands in for the Python service.
+- They cover success cases, invalid input, 401, 403, 404, 409, 422 and 429 responses, CSRF, token reuse, lockout, a database outage, an engine outage, live streaming and path-traversal attempts.
+
+Tips: `TEST_LOGS=1` shows app logs, and `KEEP_TEST_SCHEMA=1` keeps the test schema so you can inspect it.
 
 ---
 
-## Testing
+## 🐳 Docker
 
-```bash
-npm run test:unit          # fast; no database, no engine
-npm run test:cov           # unit tests with coverage (coverage/)
-npm run test:integration   # needs Postgres: `make db` first, or set TEST_DATABASE_URL
+```mermaid
+flowchart LR
+    PG[("postgres<br/>localhost:5433")] -->|healthy| MIG["migrate<br/>one-time: migrations + seed"]
+    MIG -->|finished| BE["backend<br/>localhost:3000<br/>web app + API"]
+    PG --> BE
+    ENG["engine<br/>private :8700"] -->|healthy| BE
+    BANK["bank<br/>mock target app"] -.-|shares network| ENG
 ```
 
-- **Unit tests** (`test/unit/`) cover services and business rules (users, auth, API keys, capabilities, runs, session cleanup), guards (roles, CSRF), the exception filter (Prisma, body-parser, database-down mapping), the envelope interceptor, DTO validation, environment validation, pagination, the engine client's error mapping and health.
-- **Integration tests** (`test/integration/`) boot the real `AppModule` with the production HTTP pipeline (`configureApp`) against real PostgreSQL. A fake engine stands in for the Python service. Each run creates and migrates its own schema (`it_<random>`) and drops it afterwards, so it never touches development data and parallel CI jobs can share a server. They cover success paths, validation failures (including unknown fields and query parameters), 401, 403, 404, 409, 422, 429 rate limiting, CSRF rules, refresh-token reuse, lockout, role changes taking effect mid-session, a database outage (`503 DATABASE_UNAVAILABLE`, no driver details leaked), an engine outage (`degraded`), SSE streaming, path traversal and the MCP relay.
+| Service           | Purpose                                                                         |
+| ----------------- | ------------------------------------------------------------------------------- |
+| `postgres`        | PostgreSQL 17. Its data lives in a named volume. Reachable only from localhost. |
+| `migrate`         | Runs once: applies migrations, then seeds the users. The backend waits for it.  |
+| `engine` / `bank` | The rote engine and the mock app it drives (private network only)               |
+| `backend`         | This service, in production mode                                                |
 
-Set `TEST_LOGS=1` to see application logs and `KEEP_TEST_SCHEMA=1` to keep the schema for inspection.
+**The production image** (`backend/Dockerfile`) is built in stages, so the final image contains only what it needs to run:
 
----
-
-## Docker
-
-**Image** (`backend/Dockerfile`, built from the repository root because it also builds `ui/`):
+- Small base (`node:24-alpine`), about **160 MB**
+- Production dependencies only, with compiled JavaScript and the built web app
+- Runs as the **non-root** `node` user
+- `tini` as PID 1 for clean shutdowns
+- A built-in health check
 
 ```bash
+# Build the image yourself (from the repo root: it also builds the web app)
 docker build -f backend/Dockerfile --target runtime -t rote-backend .
 ```
 
-Stages: `ui` (React build) → `deps` → `build` (Prisma generate + `nest build`; also the image of the migration job) → `prod-deps` (`npm ci --omit=dev`) → `runtime`. The runtime image is `node:24-alpine` with production dependencies only and the compiled `dist/`. It runs as the unprivileged `node` user under `tini` (so SIGTERM triggers Nest's graceful shutdown) and has a `HEALTHCHECK` on `/health/liveness`. It is about 160 MB.
+---
 
-**Compose** (`docker-compose.yml` at the root) runs the whole stack:
+## 🔄 CI/CD
 
-| Service          | Role                                                                                                                       |
-| ---------------- | -------------------------------------------------------------------------------------------------------------------------- |
-| `postgres`       | PostgreSQL 17, port bound to `127.0.0.1:${POSTGRES_HOST_PORT:-5433}`, named volume                                         |
-| `migrate`        | One-shot release job: `prisma migrate deploy` then the idempotent seed. The backend waits for it to complete successfully. |
-| `engine`, `bank` | The rote engine and the bundled mock target app (internal network only)                                                    |
-| `backend`        | This service on `${ROTE_HTTP_PORT:-3000}`, `NODE_ENV=production`                                                           |
+Every push and pull request runs [`.github/workflows/ci.yml`](../.github/workflows/ci.yml). Any failure stops the pipeline.
 
-```bash
-make up                         # = make env + docker compose up --build -d
-make logs                       # follow backend + engine logs
-make down                       # stop (volumes kept; `docker compose down -v` drops them)
-docker compose up -d --wait postgres   # Postgres only (= make db)
+```mermaid
+flowchart LR
+    A[Install] --> B["Lint<br/>ESLint + Prettier"] --> C[Type check] --> D[Unit tests] --> E["Integration tests<br/>real PostgreSQL"] --> F["Migration check<br/>schema matches migrations"] --> G[Build]
+    G --> H["Docker build<br/>after the UI and engine jobs also pass"]
 ```
 
-Compose refuses to start if `POSTGRES_PASSWORD`, `JWT_SECRET`, `ENGINE_TOKEN` or `SEED_ADMIN_PASSWORD` are missing from `.env`.
+Run the same checks locally before you push:
+
+```bash
+cd backend
+npm run lint && npm run format:check && npm run typecheck \
+  && npm run test:unit && npm run test:integration && npm run build
+```
 
 ---
 
-## Production deployment
+## 🌐 Deploying to production
 
-1. **Build and push** the `runtime` target. CI already builds it on every push.
-2. **Provide configuration** from your secret store, never from a file in the image: `NODE_ENV=production`, `DATABASE_URL`, `JWT_SECRET` (random, ≥ 32 characters), `ENGINE_TOKEN`, `ENGINE_URL`, `PUBLIC_URL` (https). Set `TRUST_PROXY` to the number of proxies in front. Leave `DEMO_ENABLED` off, and consider `SWAGGER_ENABLED=false` on internet-facing deployments.
-3. **Migrate as a release step**, before the new version takes traffic: run `npx prisma migrate deploy` from the `build` target with the production `DATABASE_URL`. The API never migrates itself, so replicas never race on schema changes. Write migrations to be backward compatible (expand, deploy, then contract), because old replicas keep serving during a rollout.
-4. **Seed once** for the first admin (`npx prisma db seed` with `SEED_ADMIN_*`). It is idempotent and never resets an existing password.
-5. **Wire probes:** liveness `GET /health/liveness`, readiness `GET /health/readiness` (database only, so an engine outage does not pull every replica out of rotation). `GET /health` is the human-facing summary.
-6. **Scale horizontally.** The API is stateless: sessions live in Postgres and background jobs elect a leader through `job_leases`. Size `DATABASE_POOL_MAX` per replica, or put PgBouncer in front for many replicas.
-7. **Terminate TLS** at the load balancer. Cookies are `Secure` in production. With an `https` `PUBLIC_URL`, HSTS is sent.
-8. **Logs** are JSON lines on stdout (timestamp, level, request id, user id, method, path, status, duration) with credentials redacted. Ship them with your platform's collector. `X-Request-Id` is accepted from upstream, echoed back, put on every log line and error body, and forwarded to the engine.
+```mermaid
+flowchart LR
+    U[Users and agents] -->|HTTPS| LB["Load balancer<br/>TLS"]
+    LB --> R1[backend replica 1]
+    LB --> R2[backend replica 2]
+    LB --> RN[backend replica N]
+    R1 --> PG[("PostgreSQL<br/>managed")]
+    R2 --> PG
+    RN --> PG
+    R1 --> EN["rote engine<br/>private network"]
+    R2 --> EN
+    RN --> EN
+    MJ["Release job<br/>prisma migrate deploy"] -.->|before each rollout| PG
+```
+
+**Checklist**
+
+1. **Build** the `runtime` image and push it to your registry.
+2. **Set secrets** from your secret manager (never bake them into the image): `NODE_ENV=production`, `DATABASE_URL`, `JWT_SECRET`, `ENGINE_TOKEN`, `ENGINE_URL` and an `https://` `PUBLIC_URL`.
+3. **Run migrations first**, as a release step: `npx prisma migrate deploy`. The app never changes the schema on its own, so replicas never race.
+4. **Seed once** for the first admin: `npx prisma db seed`. It's safe to re-run and never resets passwords.
+5. **Health checks:** liveness on `/health/liveness`, readiness on `/health/readiness`.
+6. **Behind a proxy**, set `TRUST_PROXY` (usually `1`).
+7. **Scale** by adding replicas. The API is stateless, and background jobs elect one leader through the database. Keep `replicas × DATABASE_POOL_MAX` below PostgreSQL's connection limit.
+8. **Lock it down:** keep `DEMO_ENABLED=false`, and consider `SWAGGER_ENABLED=false` on public deployments.
+9. **Logs** go to stdout as JSON lines (timestamp, level, request id, user, method, path, status, duration), ready for any log collector.
 
 ---
 
-## Architectural decisions
+## 🩺 Troubleshooting
 
-- **Modular monolith, not microservices.** One deployable with feature modules that only talk through exported services. The engine is already a separate service because it runs browsers; nothing else needs to be.
-- **The engine is a data source, behind a gateway.** `EngineClient` plays the repository role for engine-owned data. Every response is validated with zod (fields the control plane reads are typed; the rest passes through), so an engine change fails loudly at the boundary instead of deep in a service. Engine documents keep their snake_case keys and their own JSON Schemas (`schemas/`).
-- **Postgres indexes runs; the engine stays authoritative.** Runs started anywhere are copied into `runs` by a leader-leased background sync, which reconciles in three statements regardless of size, so lists, filters and attribution are database queries. Reading one run fetches it live and writes it through.
-- **Database-backed sessions over stateless JWTs.** Each request does one indexed lookup (`sessions` by id, joined to `users`). In exchange, sign-out, disabling a user and role changes take effect immediately, and refresh-token theft is detectable.
-- **Cookies for browsers, headers for programs.** httpOnly cookies let SSE and `<img>` evidence authenticate without exposing tokens to JavaScript. CSRF is handled by `SameSite=Strict` plus a double-submit token. The CSRF check is skipped only when a bearer token or API key authenticates the request.
-- **Ranked roles** (VIEWER < OPERATOR < REVIEWER < ADMIN) and `@MinRole`, rather than permission matrices. That is enough for this domain and simple to audit. Payload-dependent rules live in services.
-- **Stable error codes as API contract.** One `AppException` type, one global filter, and `error.code` values that are added but never renamed.
-- **Migrations are a release job, not a startup step.**
-- **No Redis or queue.** Background work (run sync, session cleanup) uses `@nestjs/schedule` with a Postgres lease, which is enough at this scale (see limitations).
-- **Pre-commit instead of Husky.** This is a polyglot repository (Python, UI, backend). The `pre-commit` framework already runs the backend's ESLint, Prettier and `tsc` on commit (`make hooks`), so Husky would run the same checks twice.
+| Problem                                              | Fix                                                                                                                              |
+| ---------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| `make up` fails with `set POSTGRES_PASSWORD in .env` | Run `make env` (or just `make up`, which runs it first).                                                                         |
+| Port 3000 is already in use                          | Add `ROTE_HTTP_PORT=3300` to `.env`, then `make up`.                                                                             |
+| The app exits with `Invalid configuration`           | Read the list in the message; it names every bad variable. Compare with `.env.example`.                                          |
+| `/health` says `"status": "degraded"`                | The engine is down. Check `docker compose logs engine`. Sign-in and users still work.                                            |
+| `503 ENGINE_UNAVAILABLE` in local development        | Start `make bank` and `make engine`.                                                                                             |
+| `Cannot find module …/generated/prisma/client.js`    | Run `npx prisma generate` in `backend/`. The generated client isn't committed.                                                   |
+| Integration tests say they need PostgreSQL           | Run `make db`, or set `TEST_DATABASE_URL`.                                                                                       |
+| `403 CSRF_TOKEN_INVALID` from a script               | Scripts should use a Bearer token or an API key instead of cookies.                                                              |
+| Login keeps failing with the right password          | The account is locked after 5 failures; wait 15 minutes.                                                                         |
+| Lost the admin password                              | It's `SEED_ADMIN_PASSWORD` in `.env`. For a completely fresh start: `docker compose down -v && make up` (this deletes all data). |
 
 ---
 
-## Limitations and TODOs
+## 🧭 Design decisions
 
-- **Rate limits are per instance.** The throttler uses in-memory storage, so N replicas allow N× the configured rate. If strict global limits matter, move it to a shared store (Redis) or enforce limits at the gateway.
-- **Engine-backed collections are paginated in memory.** Capabilities, eval results and tool lists are fetched whole from the engine and sliced. This is fine for libraries in the hundreds; it needs engine-side paging beyond that.
-- **No self-service password reset, email verification, MFA or SSO.** There is no email infrastructure. Admins create accounts and users change their own passwords. OIDC SSO would be the natural next step for an organization.
-- **Audit writes are best effort.** A failed audit insert is logged as an error but does not fail the action. A strictly compliant deployment would write audit rows in the same transaction or through an outbox.
-- **Retention:** ended sessions are purged after 30 days (daily job). `audit_logs` and `runs` have no retention policy yet.
-- **Observability:** structured logs and request ids only. No metrics endpoint or distributed tracing yet (OpenTelemetry would slot in at `main.ts`).
-- **Access-token checks hit the database** on every request (by design, see above). Add a short-lived cache if that lookup becomes a hotspot.
+- **One service, many modules** (a modular monolith). Simple to run and deploy, and each module could become its own service later. The engine is already separate because it runs browsers.
+- **Sessions live in the database.** This costs one fast lookup per request, and in return sign-out, disabling a user and role changes take effect immediately.
+- **Cookies for browsers, tokens for programs.** Cookies keep tokens away from JavaScript; scripts and agents use Bearer tokens or API keys.
+- **Four ranked roles** instead of a complex permission matrix. Easy to understand and audit.
+- **Stable error codes** are part of the API contract.
+- **Migrations run as a separate release step**, never when the app starts.
+- **No Redis or message queue yet.** Background jobs use a database lease. Add more infrastructure only when the load needs it.
+- **pre-commit instead of Husky.** This repo mixes Python, a web app and this backend. The existing pre-commit hooks already run ESLint, Prettier and the type check for the backend.
+
+---
+
+## 📌 Limitations and roadmap
+
+| Today                                                                                   | Next step                                                      |
+| --------------------------------------------------------------------------------------- | -------------------------------------------------------------- |
+| Rate limits are counted per instance                                                    | A shared store (Redis) or gateway rate limits when scaling out |
+| No password reset by email, no MFA or SSO                                               | OIDC single sign-on                                            |
+| Audit writes are best effort (a failure is logged, not fatal)                           | Write audit rows in the same transaction (outbox)              |
+| No retention policy for `audit_logs` and `runs` (sessions are cleaned up after 30 days) | Configurable retention                                         |
+| Logs and request ids only                                                               | Metrics and tracing with OpenTelemetry                         |
+| Engine-backed lists are paged in memory                                                 | Paging in the engine for very large libraries                  |
+
+---
+
+## 🤝 Contributing
+
+1. Create a branch: `git checkout -b feat/short-description`.
+2. Install the hooks once: `make hooks`. They lint, format and type-check on every commit.
+3. Follow the layers: controller → service → repository. Add a DTO for every input and a test for every rule.
+4. Changed `schema.prisma`? Add a migration with `npx prisma migrate dev --name …`.
+5. Run the checks (see [CI/CD](#-cicd)) and open a pull request.
+
+Commit messages follow [Conventional Commits](https://www.conventionalcommits.org/), for example `feat(auth): add session cleanup job` or `fix(api): reject unknown query params`.
+
+---
+
+<div align="center">
+
+Part of **[rote](../README.md)**. Private project (`UNLICENSED`).
+
+</div>
