@@ -156,6 +156,8 @@ cd backend
 npm run start:dev # API on http://localhost:3000, restarts on every change
 ```
 
+> Port 3000 taken? Start it on another port with `PORT=3001 npm run start:dev` (or set `PORT` in `backend/.env`).
+
 The engine is only needed for runs, capabilities and evals. Start it in two more terminals from the repo root:
 
 ```bash
@@ -473,7 +475,7 @@ npx prisma studio                             # browse the data
 
 - All endpoints live under **`/api/v1`**. A future `/api/v2` can run side by side without breaking v1.
 - Requests and responses are JSON. Bodies are limited to 256 kB.
-- Every request body and query string is validated. Unknown fields are rejected.
+- Every request body and query string is validated. Unknown fields are rejected, and so are `__proto__` and `constructor` keys anywhere in a JSON body (`FORBIDDEN_JSON_KEY`).
 - Full, interactive docs are at **`/api/docs`**.
 
 ### Response format
@@ -514,7 +516,7 @@ Check `error.code` in your code, not `message`. Codes never change meaning. List
 | Status                | Common codes                                                                | Meaning                                                                      |
 | --------------------- | --------------------------------------------------------------------------- | ---------------------------------------------------------------------------- |
 | 200 / 201 / 202 / 204 | —                                                                           | Success (OK, created, accepted, no content)                                  |
-| 400                   | `VALIDATION_ERROR`, `MALFORMED_JSON`                                        | The request is invalid; `error.details` lists every bad field                |
+| 400                   | `VALIDATION_ERROR`, `MALFORMED_JSON`, `FORBIDDEN_JSON_KEY`                  | The request is invalid; `error.details` lists every bad field                |
 | 401                   | `UNAUTHORIZED`, `INVALID_CREDENTIALS`, `SESSION_EXPIRED`, `INVALID_API_KEY` | Not signed in, or the credentials are wrong or expired                       |
 | 403                   | `INSUFFICIENT_ROLE`, `CSRF_TOKEN_INVALID`, `SELF_APPROVAL_FORBIDDEN`        | Signed in, but not allowed                                                   |
 | 404                   | `NOT_FOUND`, `USER_NOT_FOUND`, `ROUTE_NOT_FOUND`                            | Doesn't exist                                                                |
@@ -543,46 +545,46 @@ Check `error.code` in your code, not `message`. Codes never change meaning. List
 <details>
 <summary><b>Full endpoint list (48 paths)</b></summary>
 
-| Method            | Path                                                                              | Role                                          | Purpose                                                  |
-| ----------------- | --------------------------------------------------------------------------------- | --------------------------------------------- | -------------------------------------------------------- |
-| GET               | `/auth/options`                                                                   | public                                        | Whether sign-up and demo controls are on                 |
-| POST              | `/auth/register`                                                                  | public (if `AUTH_ALLOW_SIGNUP`)               | Create a Viewer account and sign in                      |
-| POST              | `/auth/login`                                                                     | public                                        | Sign in: cookies + access token                          |
-| POST              | `/auth/refresh`                                                                   | refresh cookie + CSRF                         | New access token; rotates the refresh token              |
-| POST              | `/auth/logout`                                                                    | optional                                      | Revoke the session; always 204                           |
-| GET               | `/auth/me`                                                                        | any                                           | You, and the role this request acts with                 |
-| POST              | `/auth/password`                                                                  | any (not API keys)                            | Change password; signs out other sessions                |
-| GET               | `/users`                                                                          | Admin                                         | List: search, `role`, `status`, sort, pages              |
-| POST              | `/users`                                                                          | Admin                                         | Create a user with a role                                |
-| GET, PATCH        | `/users/me`                                                                       | any                                           | Your record; change your display name                    |
-| GET               | `/users/:id`                                                                      | Admin, or yourself                            | One user                                                 |
-| PATCH             | `/users/:id`                                                                      | Admin                                         | Change name, role or status                              |
-| DELETE            | `/users/:id`                                                                      | Admin                                         | Delete (never yourself, never the last admin)            |
-| GET               | `/api-keys`                                                                       | any                                           | Your keys (admins: `?userId=` or `?all=true`)            |
-| POST              | `/api-keys`                                                                       | any (signed in, not with a key)               | Create; the secret is shown once                         |
-| DELETE            | `/api-keys/:id`                                                                   | owner or Admin                                | Revoke                                                   |
-| GET               | `/audit-logs`                                                                     | Admin                                         | Filter by action, actor, resource, outcome, dates        |
-| GET               | `/runs`                                                                           | any                                           | Filter by status, kind, tenant, origin, `requestedBy=me` |
-| POST              | `/runs`                                                                           | Operator (discovery, probe, drafts: Reviewer) | Start a run                                              |
-| GET               | `/runs/:id`                                                                       | any                                           | A run with its result and files                          |
-| GET               | `/runs/:id/stream`                                                                | any                                           | Live events (Server-Sent Events)                         |
-| GET               | `/runs/:id/files/*path`                                                           | any                                           | One evidence file                                        |
-| GET               | `/runs/:id/operator/state`, `/screen`, `/live.jpg`                                | any (screen blurred below Operator)           | Watch a live handoff                                     |
-| GET               | `/runs/:id/operator/interventions/:iid[/screenshot]`                              | any                                           | One handoff                                              |
-| POST              | `/runs/:id/operator/interventions/:iid/claim`                                     | Operator                                      | Take control of the live session                         |
-| POST              | `/runs/:id/operator/input`                                                        | Operator (in control)                         | Click, type, press a key                                 |
-| POST              | `/runs/:id/operator/interventions/:iid/resolve`                                   | Operator (in control)                         | Hand back control                                        |
-| GET               | `/interventions`                                                                  | any                                           | Handoff queue                                            |
-| GET               | `/capabilities`, `/capabilities/:id`, `/capabilities/:id/approvals`               | any                                           | Library, details, approval history                       |
-| POST              | `/capabilities/:ref/approve`                                                      | Reviewer                                      | Approve a draft (not your own)                           |
-| POST              | `/capabilities/:id/invoke`                                                        | Operator                                      | Run a capability and wait for the result                 |
-| GET               | `/agents/tools`, `/agents/catalog`                                                | any                                           | Capabilities as tool definitions for agents              |
-| GET, POST, DELETE | `/mcp`                                                                            | Operator                                      | MCP endpoint for AI agents                               |
-| GET               | `/evals/datasets[/:id]`, `/evals/results[/:id]`, `/evals/results/:id/files/*path` | any                                           | Eval datasets and results                                |
-| POST              | `/evals/runs`                                                                     | Reviewer                                      | Start an eval                                            |
-| GET               | `/status`, `/policy`, `/evidence`                                                 | any                                           | Environment, guardrails, evidence index                  |
-| GET, PUT          | `/demo/members`, `/demo/faults/:tenant`                                           | any; PUT needs Operator                       | Demo controls (when `DEMO_ENABLED`)                      |
-| GET               | `/health`, `/health/liveness`, `/health/readiness`                                | public                                        | Health checks                                            |
+| Method            | Path                                                                              | Role                                          | Purpose                                                                       |
+| ----------------- | --------------------------------------------------------------------------------- | --------------------------------------------- | ----------------------------------------------------------------------------- |
+| GET               | `/auth/options`                                                                   | public                                        | Whether sign-up and demo controls are on                                      |
+| POST              | `/auth/register`                                                                  | public (if `AUTH_ALLOW_SIGNUP`)               | Create a Viewer account and sign in                                           |
+| POST              | `/auth/login`                                                                     | public                                        | Sign in: cookies + access token                                               |
+| POST              | `/auth/refresh`                                                                   | refresh cookie + CSRF                         | New access token; rotates the refresh token                                   |
+| POST              | `/auth/logout`                                                                    | optional                                      | Revoke the session; always 204                                                |
+| GET               | `/auth/me`                                                                        | any                                           | You, and the role this request acts with                                      |
+| POST              | `/auth/password`                                                                  | any (not API keys)                            | Change password; signs out other sessions                                     |
+| GET               | `/users`                                                                          | Admin                                         | List: search, `role`, `status`, sort, pages                                   |
+| POST              | `/users`                                                                          | Admin                                         | Create a user with a role                                                     |
+| GET, PATCH        | `/users/me`                                                                       | any                                           | Your record; change your display name                                         |
+| GET               | `/users/:id`                                                                      | Admin, or yourself                            | One user                                                                      |
+| PATCH             | `/users/:id`                                                                      | Admin                                         | Change name, role or status                                                   |
+| DELETE            | `/users/:id`                                                                      | Admin                                         | Delete (never yourself, never the last admin)                                 |
+| GET               | `/api-keys`                                                                       | any                                           | Your keys (admins: `?userId=` or `?all=true`)                                 |
+| POST              | `/api-keys`                                                                       | any (signed in, not with a key)               | Create; the secret is shown once                                              |
+| DELETE            | `/api-keys/:id`                                                                   | owner or Admin                                | Revoke                                                                        |
+| GET               | `/audit-logs`                                                                     | Admin                                         | Filter by action, actor, resource, outcome, dates                             |
+| GET               | `/runs`                                                                           | any                                           | Filter by status, kind, tenant, origin, `requestedBy=me`                      |
+| POST              | `/runs`                                                                           | Operator (discovery, probe, drafts: Reviewer) | Start a run                                                                   |
+| GET               | `/runs/:id`                                                                       | any                                           | A run with its result and files; unmasked outputs only for whoever started it |
+| GET               | `/runs/:id/stream`                                                                | any                                           | Live events (Server-Sent Events)                                              |
+| GET               | `/runs/:id/files/*path`                                                           | any                                           | One evidence file                                                             |
+| GET               | `/runs/:id/operator/state`, `/screen`, `/live.jpg`                                | any (screen blurred below Operator)           | Watch a live handoff                                                          |
+| GET               | `/runs/:id/operator/interventions/:iid[/screenshot]`                              | any                                           | One handoff                                                                   |
+| POST              | `/runs/:id/operator/interventions/:iid/claim`                                     | Operator                                      | Take control of the live session                                              |
+| POST              | `/runs/:id/operator/input`                                                        | Operator (in control)                         | Click, type, press a key                                                      |
+| POST              | `/runs/:id/operator/interventions/:iid/resolve`                                   | Operator (in control)                         | Hand back control                                                             |
+| GET               | `/interventions`                                                                  | any                                           | Handoff queue                                                                 |
+| GET               | `/capabilities`, `/capabilities/:id`, `/capabilities/:id/approvals`               | any                                           | Library, details, approval history                                            |
+| POST              | `/capabilities/:ref/approve`                                                      | Reviewer                                      | Approve a draft (not your own)                                                |
+| POST              | `/capabilities/:id/invoke`                                                        | Operator                                      | Run a capability and wait for the result                                      |
+| GET               | `/agents/tools`, `/agents/catalog`                                                | any                                           | Capabilities as tool definitions for agents                                   |
+| GET, POST, DELETE | `/mcp`                                                                            | Operator                                      | MCP endpoint for AI agents                                                    |
+| GET               | `/evals/datasets[/:id]`, `/evals/results[/:id]`, `/evals/results/:id/files/*path` | any                                           | Eval datasets and results                                                     |
+| POST              | `/evals/runs`                                                                     | Reviewer                                      | Start an eval                                                                 |
+| GET               | `/status`, `/policy`, `/evidence`                                                 | any                                           | Environment, guardrails, evidence index                                       |
+| GET, PUT          | `/demo/members`, `/demo/faults/:tenant`                                           | any; PUT needs Operator                       | Demo controls (when `DEMO_ENABLED`)                                           |
+| GET               | `/health`, `/health/liveness`, `/health/readiness`                                | public                                        | Health checks                                                                 |
 
 </details>
 
@@ -648,7 +650,9 @@ Roles are ranked. Each role can do everything the roles above it in this table c
 - **Refresh tokens rotate.** If a stolen token is used again, the session is revoked.
 - **API keys** are stored as hashes and capped at their owner's current role.
 - **CSRF protection** for cookie-based requests; **rate limits** per IP, stricter on sign-in.
-- **Security headers** (helmet and CSP), a **CORS allow-list** and **request size limits**.
+- **Security headers** (helmet and CSP), a **CORS allow-list** and **request size limits**. Evidence files are served with a sandboxing CSP, so captured content can never run scripts.
+- **Personal data stays with the requester:** a run's unmasked outputs (`caller`) are returned only to the user who started it. Everyone else sees the masked evidence.
+- **Prototype-poisoning protection:** JSON bodies containing `__proto__` or `constructor` keys are rejected before any code reads them.
 - **Logs never contain** passwords, tokens, cookies or API keys; they are redacted.
 
 ---
@@ -819,18 +823,22 @@ flowchart LR
 
 ## 🩺 Troubleshooting
 
-| Problem                                              | Fix                                                                                                                              |
-| ---------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
-| `make up` fails with `set POSTGRES_PASSWORD in .env` | Run `make env` (or just `make up`, which runs it first).                                                                         |
-| Port 3000 is already in use                          | Add `ROTE_HTTP_PORT=3300` to `.env`, then `make up`.                                                                             |
-| The app exits with `Invalid configuration`           | Read the list in the message; it names every bad variable. Compare with `.env.example`.                                          |
-| `/health` says `"status": "degraded"`                | The engine is down. Check `docker compose logs engine`. Sign-in and users still work.                                            |
-| `503 ENGINE_UNAVAILABLE` in local development        | Start `make bank` and `make engine`.                                                                                             |
-| `Cannot find module …/generated/prisma/client.js`    | Run `npx prisma generate` in `backend/`. The generated client isn't committed.                                                   |
-| Integration tests say they need PostgreSQL           | Run `make db`, or set `TEST_DATABASE_URL`.                                                                                       |
-| `403 CSRF_TOKEN_INVALID` from a script               | Scripts should use a Bearer token or an API key instead of cookies.                                                              |
-| Login keeps failing with the right password          | The account is locked after 5 failures; wait 15 minutes.                                                                         |
-| Lost the admin password                              | It's `SEED_ADMIN_PASSWORD` in `.env`. For a completely fresh start: `docker compose down -v && make up` (this deletes all data). |
+| Problem                                                     | Fix                                                                                                                                                                                                                                                                                                                                                              |
+| ----------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `make up` fails with `set POSTGRES_PASSWORD in .env`        | Run `make env` (or just `make up`, which runs it first).                                                                                                                                                                                                                                                                                                         |
+| Port 3000 is already in use                                 | Add `ROTE_HTTP_PORT=3300` to `.env`, then `make up`.                                                                                                                                                                                                                                                                                                             |
+| Port 3000 is busy in local development (option B)           | `PORT=3001 npm run start:dev`, or set `PORT` in `backend/.env`.                                                                                                                                                                                                                                                                                                  |
+| Any `docker` command fails with `500 Internal Server Error` | Docker's engine has crashed, which is not a project problem. Quit Docker Desktop completely and reopen it, then check with `docker pull hello-world`. If Docker Desktop says it is unable to start, choose **Quit**, never **Reset to factory defaults**: a reset deletes every image, container and volume on the machine, including other projects' databases. |
+| Docker Desktop: `Docker.raw is held by another process`     | A Docker VM process is stuck exiting inside macOS and ignores even `kill -9`. Only restarting the Mac clears it.                                                                                                                                                                                                                                                 |
+| Image downloads hang forever (`postgres:17-alpine Pulling`) | Docker's VM network has frozen (Docker's VM log shows `virtio_net … transmit queue 0 timed out`). Restart the Mac and update Docker Desktop (whale icon → Check for updates).                                                                                                                                                                                    |
+| The app exits with `Invalid configuration`                  | Read the list in the message; it names every bad variable. Compare with `.env.example`.                                                                                                                                                                                                                                                                          |
+| `/health` says `"status": "degraded"`                       | The engine is down. Check `docker compose logs engine`. Sign-in and users still work.                                                                                                                                                                                                                                                                            |
+| `503 ENGINE_UNAVAILABLE` in local development               | Start `make bank` and `make engine`.                                                                                                                                                                                                                                                                                                                             |
+| `Cannot find module …/generated/prisma/client.js`           | Run `npx prisma generate` in `backend/`. The generated client isn't committed.                                                                                                                                                                                                                                                                                   |
+| Integration tests say they need PostgreSQL                  | Run `make db`, or set `TEST_DATABASE_URL`.                                                                                                                                                                                                                                                                                                                       |
+| `403 CSRF_TOKEN_INVALID` from a script                      | Scripts should use a Bearer token or an API key instead of cookies.                                                                                                                                                                                                                                                                                              |
+| Login keeps failing with the right password                 | The account is locked after 5 failures; wait 15 minutes.                                                                                                                                                                                                                                                                                                         |
+| Lost the admin password                                     | It's `SEED_ADMIN_PASSWORD` in `.env`. For a completely fresh start: `docker compose down -v && make up` (this deletes all data).                                                                                                                                                                                                                                 |
 
 ---
 

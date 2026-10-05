@@ -379,7 +379,16 @@ def create_app(
                 return result.parent, "evidence"
         raise HTTPException(404, f"no run {run_id}")
 
+    def recorded_duration_ms(run: ActiveRun) -> int | None:
+        """A finished run's duration as its result.json recorded it (what on-disk listings report)."""
+        result_path = run.dir / "result.json" if run.dir else None
+        if result_path is None or not result_path.exists():
+            return None
+        duration = json.loads(result_path.read_text()).get("duration_ms")
+        return duration if isinstance(duration, int) else None
+
     def active_summary(run: ActiveRun) -> dict[str, Any]:
+        finished = run.finished.is_set()
         return {
             "id": run.id,
             "source": "active",
@@ -388,8 +397,8 @@ def create_app(
             "tenant": run.tenant,
             "status": run.status,
             "started_at": run.started_at.isoformat(),
-            "duration_ms": None,
-            "active": not run.finished.is_set(),
+            "duration_ms": recorded_duration_ms(run) if finished else None,
+            "active": not finished,
         }
 
     @app.get("/api/runs", response_model=list[RunSummary], tags=["runs"], summary="Live, recorded and evidence runs")

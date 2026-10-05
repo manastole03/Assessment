@@ -56,6 +56,12 @@ def test_replay_runs_and_streams(ui_url: str) -> None:
     run = httpx.get(f"{ui_url}/api/runs/{run_id}").json()
     # The test library has no probed MEMBER_NOT_FOUND handler, so this is an honest, debuggable failure.
     assert run["status"] == "failed"
+    # A finished run still held in memory reports the duration it recorded, like one read from disk.
+    assert run["active"] is False
+    assert isinstance(run["duration_ms"], int)
+    assert run["duration_ms"] > 0
+    listed = next(r for r in httpx.get(f"{ui_url}/api/runs").json() if r["id"] == run_id)
+    assert listed["duration_ms"] == run["duration_ms"]
     assert run["result"]["failure"]["code"] == "TARGET_NOT_FOUND"
     assert "NO RECORDS MATCH" in run["result"]["failure"]["observed"]
     assert httpx.get(f"{ui_url}/api/runs/{run_id}/files/report.html").status_code == 200

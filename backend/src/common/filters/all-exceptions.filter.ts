@@ -13,6 +13,7 @@ import { ErrorCode } from '../constants/error-codes.js';
 import { AppException, type ErrorDetails } from '../exceptions/app.exception.js';
 import type { ApiFailure } from '../interfaces/api-response.interface.js';
 import type { AppRequest } from '../interfaces/authenticated-user.interface.js';
+import { FORBIDDEN_JSON_KEY_MARKER } from '../utils/json-body.util.js';
 
 interface NormalizedError {
   status: number;
@@ -61,10 +62,20 @@ export function isDatabaseUnavailable(error: unknown): boolean {
   return fromDatabase && NETWORK_ERRNO.test(`${error.message} ${String(cause)}`);
 }
 
+const FORBIDDEN_KEY: NormalizedError = {
+  status: 400,
+  code: ErrorCode.FORBIDDEN_JSON_KEY,
+  message: 'The request body contains a forbidden key (__proto__ or constructor)',
+  unexpected: false,
+};
+
 /** Body-parser failures arrive as plain errors with a `type`. */
 function bodyParserError(error: unknown): NormalizedError | null {
   if (!(error instanceof Error)) return null;
   const type = (error as { type?: unknown }).type;
+  if (type === 'entity.parse.failed' && error.message.includes(FORBIDDEN_JSON_KEY_MARKER)) {
+    return FORBIDDEN_KEY;
+  }
   if (type === 'entity.parse.failed') {
     return {
       status: 400,
@@ -165,6 +176,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
       const status = exception.getStatus();
       const message = messageOf(exception.getResponse(), exception.message);
       // Nest wraps body-parser's SyntaxError in a plain BadRequestException with the parser's text.
+      if (status === 400 && message.includes(FORBIDDEN_JSON_KEY_MARKER)) return FORBIDDEN_KEY;
       if (status === 400 && !(exception instanceof AppException) && /JSON/.test(message)) {
         return {
           status: 400,

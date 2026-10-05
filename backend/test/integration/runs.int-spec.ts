@@ -186,6 +186,25 @@ describe('Runs and human handoff', () => {
     await viewer.agent.get('/api/v1/runs/..%2F..%2Fetc').expect(400);
   });
 
+  it('returns the unmasked caller payload only to the user who started the run', async () => {
+    const started = await operator.agent
+      .post('/api/v1/runs')
+      .set('x-csrf-token', operator.csrf)
+      .send(REPLAY)
+      .expect(201);
+    const id = started.body.data.id as string;
+
+    const own = await operator.agent.get(`/api/v1/runs/${id}`).expect(200);
+    expect(own.body.data.caller).toMatchObject({ outputs: { member_name: 'Alex Member' } });
+
+    // Others see the run and its (masked) evidence, never the personal data returned to the requester.
+    for (const other of [viewer, reviewer]) {
+      const seen = await other.agent.get(`/api/v1/runs/${id}`).expect(200);
+      expect(seen.body.data.id).toBe(id);
+      expect(seen.body.data.caller).toBeNull();
+    }
+  });
+
   it('streams run events over Server-Sent Events', async () => {
     const response = await viewer.agent
       .get('/api/v1/runs/20261001T000000Z-replay-cli-1/stream')
@@ -210,6 +229,13 @@ describe('Runs and human handoff', () => {
       .get('/api/v1/runs/20261001T000000Z-replay-cli-1/files/screens/a.jpg')
       .expect(200);
     expect(image.headers['content-type']).toBe('image/jpeg');
+    // Any evidence that a browser could render as a document (SVG, XML) is sandboxed too.
+    const svg = await viewer.agent
+      .get('/api/v1/runs/20261001T000000Z-replay-cli-1/files/screens/b.svg')
+      .expect(200);
+    expect(svg.headers['content-security-policy']).toMatch(/^sandbox /);
+    expect(svg.headers['content-security-policy']).not.toMatch(/allow-scripts/);
+    expect(svg.headers['x-content-type-options']).toBe('nosniff');
     await viewer.agent
       .get('/api/v1/runs/20261001T000000Z-replay-cli-1/files/..%2F..%2Fsecrets')
       .expect(404);

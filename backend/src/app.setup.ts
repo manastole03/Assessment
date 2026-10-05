@@ -9,6 +9,7 @@ import { AllExceptionsFilter } from './common/filters/all-exceptions.filter.js';
 import { ResponseEnvelopeInterceptor } from './common/interceptors/response-envelope.interceptor.js';
 import { requestIdMiddleware } from './common/middleware/request-id.middleware.js';
 import { createValidationPipe } from './common/pipes/validation.pipe.js';
+import { rejectPoisonedKeys } from './common/utils/json-body.util.js';
 import type { AppConfig } from './config/configuration.js';
 import { setupSwagger } from './config/swagger.config.js';
 
@@ -74,7 +75,7 @@ export function configureApp(app: NestExpressApplication, config: AppConfig): vo
     req.path.startsWith('/api/docs') ? docs(req, res, next) : api(req, res, next),
   );
   app.use(cookieParser());
-  app.useBodyParser('json', { limit: config.http.bodyLimit });
+  app.useBodyParser('json', { limit: config.http.bodyLimit, reviver: rejectPoisonedKeys });
   app.useBodyParser('urlencoded', { limit: config.http.bodyLimit, extended: false });
 
   app.enableCors({

@@ -64,6 +64,19 @@ describe('AllExceptionsFilter', () => {
     expect(run(new ThrottlerException()).status).toBe(429);
   });
 
+  it('maps prototype-poisoning keys rejected by the JSON parser to FORBIDDEN_JSON_KEY', () => {
+    for (const exception of [
+      new BadRequestException('forbidden JSON key: "constructor"'),
+      Object.assign(new SyntaxError('forbidden JSON key: "__proto__"'), {
+        type: 'entity.parse.failed',
+      }),
+    ]) {
+      const { status, body } = run(exception);
+      expect(status).toBe(400);
+      expect(body?.error.code).toBe(ErrorCode.FORBIDDEN_JSON_KEY);
+    }
+  });
+
   it('maps database errors without exposing them', () => {
     const unique = Object.assign(new Error('Unique constraint failed on the fields: (`email`)'), {
       name: 'PrismaClientKnownRequestError',

@@ -35,6 +35,8 @@ export interface FakeRun {
   duration_ms: number | null;
   active: boolean;
   result: Record<string, unknown> | null;
+  /** Like the engine: what the requester receives, PII included, for live runs only. */
+  caller?: Record<string, unknown> | null;
   intervention: FakeIntervention | null;
   holder: string;
   epoch: number;
@@ -331,6 +333,7 @@ export class FakeEngine {
         tenant: String(input['tenant']),
         duration_ms: null,
         result: null,
+        caller: { status: 'running', outputs: { member_name: 'Alex Member' } },
         intervention: {
           id: 'iv_0001',
           reason_code: 'UNEXPECTED_STATE',
@@ -352,7 +355,7 @@ export class FakeEngine {
         return send(200, {
           ...this.summary(run),
           result: run.result,
-          caller: null,
+          caller: run.caller ?? null,
           error: null,
           files: {},
           interventions: run.intervention ? [run.intervention] : [],
@@ -376,6 +379,11 @@ export class FakeEngine {
         if (path === 'report.html') {
           res.writeHead(200, { 'content-type': 'text/html; charset=utf-8' });
           res.end('<html><body><img src="screens/a.jpg"><script>alert(1)</script></body></html>');
+          return;
+        }
+        if (path === 'screens/b.svg') {
+          res.writeHead(200, { 'content-type': 'image/svg+xml' });
+          res.end('<svg xmlns="http://www.w3.org/2000/svg"><script>alert(1)</script></svg>');
           return;
         }
         if (path === 'screens/a.jpg') {

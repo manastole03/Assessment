@@ -68,6 +68,55 @@ describe('Health, platform views and failure modes', () => {
     expect(huge.body.error.code).toBe('PAYLOAD_TOO_LARGE');
   });
 
+  it('rejects prototype-poisoning keys in JSON bodies with 400, never a 500', async () => {
+    const operator = await login(ctx, 'dana@example.com');
+    const cases: Array<['put' | 'post', string, string]> = [
+      [
+        'put',
+        '/api/v1/demo/faults/acme',
+        '{"faults":{"constructor":{"prototype":{"polluted":true}}}}',
+      ],
+      ['put', '/api/v1/demo/faults/acme', '{"faults":{"__proto__":{"polluted":true}}}'],
+      [
+        'put',
+        '/api/v1/demo/faults/acme',
+        '{"constructor":{"prototype":{"polluted":true}},"faults":{}}',
+      ],
+      [
+        'post',
+        '/api/v1/runs',
+        '{"kind":"replay","tenant":"acme","capability":"legacycore.member.get_savings_balance","inputs":{"constructor":{}}}',
+      ],
+      [
+        'post',
+        '/api/v1/runs',
+        '{"kind":"replay","tenant":"acme","capability":"legacycore.member.get_savings_balance","inputs":{"constructor":{"prototype":{"x":"1"}}}}',
+      ],
+      [
+        'post',
+        '/api/v1/runs',
+        '{"kind":"replay","tenant":"acme","capability":"legacycore.member.get_savings_balance","inputs":{"__proto__":{"x":"1"},"constructor":{"prototype":{"y":"1"}}}}',
+      ],
+      [
+        'post',
+        '/api/v1/auth/login',
+        '{"email":"a@example.com","password":"x","__proto__":{"role":"ADMIN"}}',
+      ],
+    ];
+    const results = [];
+    for (const [method, path, raw] of cases) {
+      const response = await operator.agent[method](path)
+        .set('x-csrf-token', operator.csrf)
+        .set('content-type', 'application/json')
+        .send(raw);
+      results.push({ path, raw, status: response.status, code: response.body.error?.code });
+    }
+    expect(results).toEqual(
+      cases.map(([, path, raw]) => ({ path, raw, status: 400, code: 'FORBIDDEN_JSON_KEY' })),
+    );
+    expect(({} as Record<string, unknown>)['polluted']).toBeUndefined();
+  });
+
   it('serves engine views and gates demo controls by role', async () => {
     const viewer = await login(ctx, 'vic@example.com');
     const status = await viewer.agent.get('/api/v1/status').expect(200);

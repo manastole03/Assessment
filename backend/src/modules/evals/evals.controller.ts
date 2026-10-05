@@ -97,7 +97,7 @@ export class EvalsController {
   ): Promise<void> {
     const upstream = this.proxy.abortOnClose(req, res);
     const response = await this.evals.openFile(id, path, upstream.signal);
-    await this.proxy.pipe(response, res, { upstream, headers: evidenceHeaders(response) });
+    await this.proxy.pipe(response, res, { upstream, headers: evidenceHeaders() });
   }
 
   @Post('runs')

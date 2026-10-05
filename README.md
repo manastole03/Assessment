@@ -54,12 +54,13 @@ make setup          # uv sync + playwright install chromium + creates .env from 
 
 ## Web UI
 
-The quickest way to see everything. Use two terminals:
+The quickest way to see everything is one command (Docker):
 
 ```bash
-make bank      # 1. the LegacyCore mock (target app) on :8600
-make ui        # 2. the web UI → http://127.0.0.1:8700 (opens your browser)
+make up        # Postgres, the control plane (UI + API), the engine and the LegacyCore mock
 ```
+
+Open **http://localhost:3000** (`ROTE_HTTP_PORT` changes the port) and sign in as `admin@rote.local` with `SEED_ADMIN_PASSWORD` from `.env` (`make up` generates it). The reviewer@, operator@ and viewer@rote.local demo accounts use `SEED_DEMO_PASSWORD`. `make ui` is an alias for `make up`. To work on the code with hot reload instead, see [backend/README.md](backend/README.md#option-b-run-the-backend-locally-hot-reload).
 
 | Page | What you can do |
 |---|---|
@@ -85,7 +86,7 @@ make ui        # 2. the web UI → http://127.0.0.1:8700 (opens your browser)
 |---|---|
 | ![Capability review](docs/images/ui-capability-review.png) | ![Failed run](docs/images/ui-run-failure.png) |
 
-The design reads like an engineering drawing: warm paper, navy ink, one sky-blue accent, geometric display type (Questrial) over Roboto, and uppercase tracked labels. The landing page tells the product as a flight. A pinned, scroll-driven story walks through survey, flight plan, autopilot, remote pilot and flight recorder, each with an isometric line drawing of the real system: the LegacyCore frameset, the recorded route across its elements, the operator's desk during a handoff. The drawings are generated from geometry by a small isometric kit ([`components/art/`](ui/src/components/art/)), and the topographic background is computed with marching squares, so nothing is a stock image. Night mode is the same drawing printed on navy. Smooth scrolling (Lenis) and all motion stand down for *reduce motion*. The UI is built with React 19, TypeScript, [shadcn/ui](https://ui.shadcn.com) (Radix primitives + Tailwind CSS 4), lucide icons, TanStack Query, React Router 7, [Motion](https://motion.dev) (animation), [Lenis](https://lenis.darkroom.engineering) (smooth scroll), [driver.js](https://driverjs.com) (the guided tour) and Vite. Studio pages are code-split and load on demand. The built assets are committed under `src/rote/web/static`, so `make ui` needs no Node; `make ui-build` rebuilds them. It is a local workstation tool: it binds to 127.0.0.1 and has no login.
+The design reads like an engineering drawing: warm paper, navy ink, one sky-blue accent, geometric display type (Questrial) over Roboto, and uppercase tracked labels. The landing page tells the product as a flight. A pinned, scroll-driven story walks through survey, flight plan, autopilot, remote pilot and flight recorder, each with an isometric line drawing of the real system: the LegacyCore frameset, the recorded route across its elements, the operator's desk during a handoff. The drawings are generated from geometry by a small isometric kit ([`components/art/`](ui/src/components/art/)), and the topographic background is computed with marching squares, so nothing is a stock image. Night mode is the same drawing printed on navy. Smooth scrolling (Lenis) and all motion stand down for *reduce motion*. The UI is built with React 19, TypeScript, [shadcn/ui](https://ui.shadcn.com) (Radix primitives + Tailwind CSS 4), lucide icons, TanStack Query, React Router 7, [Motion](https://motion.dev) (animation), [Lenis](https://lenis.darkroom.engineering) (smooth scroll), [driver.js](https://driverjs.com) (the guided tour) and Vite. Studio pages are code-split and load on demand. The control plane serves the built UI (`ui/dist`, built by Docker or `make ui-build`), behind sign-in and roles.
 
 ## Demo path (CLI)
 
@@ -151,7 +152,7 @@ Every run prints its evidence folder; open `report.html` there.
 
 ### Without live services
 
-- **`make test`** runs the full suite (67 Python tests + 18 UI tests). It starts its own mock bank and needs no API key: discovery is driven by a scripted stand-in for the model (`ScriptedDecider`) through the same agent loop and recorder.
+- **`make test`** runs the Python (68), UI (44) and backend unit (97) suites; `make test-backend-int` adds the backend integration tests (53, against a throwaway PostgreSQL schema). It starts its own mock bank and needs no API key: discovery is driven by a scripted stand-in for the model (`ScriptedDecider`) through the same agent loop and recorder.
 - **`make eval`** runs the three eval datasets offline (see [Evals](#evals)).
 - **`make evidence-offline`** regenerates `evidence/` with that stand-in. **`make evidence`** does the same with the real model. Both run the full thread: discovery → approval → probe → every replay scenario → multi-tenant.
 - **Replay never needs a key.** The capabilities committed under `capabilities/` run against `make bank` as-is.
@@ -195,21 +196,25 @@ Offline, the stand-ins measure the harness and everything deterministic around t
 A capability's contract is a tool definition (`rote catalog`), so the last step is letting agents call it. Every approved task capability is served three ways, all through one code path ([`web/agents.py`](src/rote/web/agents.py)):
 
 ```bash
-# 1. MCP over Streamable HTTP, while `make ui` runs
-claude mcp add --transport http rote http://127.0.0.1:8700/mcp
+# 0. While `make up` runs: create an OPERATOR API key in the UI or with POST /api/v1/api-keys
+export ROTE_KEY=rote_...
+
+# 1. MCP over Streamable HTTP
+claude mcp add --transport http rote http://localhost:3000/api/v1/mcp --header "Authorization: Bearer $ROTE_KEY"
 
 # 2. MCP over stdio, for hosts that launch servers (Claude Desktop, IDEs): command `rote mcp`
 uv run rote mcp
 
 # 3. REST
-curl -s http://127.0.0.1:8700/api/capabilities/legacycore.member.get_savings_balance/invoke \
+curl -s http://localhost:3000/api/v1/capabilities/legacycore.member.get_savings_balance/invoke \
+  -H "authorization: Bearer $ROTE_KEY" \
   -H 'content-type: application/json' -d '{"tenant": "acme", "inputs": {"member_id": "12345"}}'
 ```
 
 - **Checked before anything starts.** Unknown capability or tenant → 404; no approved version → 409; inputs that break the contract → 422 listing *every* problem. No browser is launched for a call that can't succeed.
 - **The answer is the result contract**: `status` (`succeeded` with typed `outputs`, `business_outcome` with a code, `failed` with a code and whether retrying helps), the `capability` version that ran, and links to the run. MCP returns it as `structured_content` (a `failed` run sets `is_error`; a business outcome is not an error).
 - **Tools carry MCP hints** from the artifact: `readOnlyHint`/`destructiveHint` from its side effects, `idempotentHint`, and a `tenant` argument listing the configured institutions.
-- **Same runs, same evidence.** Calls go through the UI's run manager: they appear live under Runs with screenshots and a report. REST calls can pass `"escalation": "wait"`, so an operator can take over the very session the agent is waiting on. If `wait_s` runs out first, the answer is `202` with `Location: /api/runs/<id>` to poll.
+- **Same runs, same evidence.** Calls go through the UI's run manager: they appear live under Runs with screenshots and a report. REST calls can pass `"escalation": "wait"`, so an operator can take over the very session the agent is waiting on. If `wait_s` runs out first, the answer is `202` with `Location: /api/v1/runs/<id>` to poll.
 
 ![The Agents & MCP page: a tool call and the contract the agent receives](docs/images/ui-agents.png)
 
@@ -272,7 +277,7 @@ rote replay CAP [-i k=v] [--tenant T] [--escalation fail|wait] [--json]         
 rote probe CAP -i k=v                       classify an unknown exceptional screen → draft handler
 rote show CAP [--tenant T]                  review sheet (effective artifact for a tenant)
 rote approve CAP --reviewer NAME            draft → approved
-rote ui [--port 8700]                       the web UI + API (review, run, watch live, take over handoffs, /mcp)
+rote engine [--port 8700]                   the engine API the control plane calls (token-protected; no UI)
 rote mcp                                    approved capabilities as MCP tools over stdio
 rote list | validate | catalog | schema     library, policy/PII lint, agent tool catalog, JSON Schemas
 rote eval list | run DATASET [--live] [--trials N] [--case ID] [--json] | show [ID]    evals (exit 1 if the gate fails)
@@ -308,7 +313,7 @@ src/rote/
   evals/       eval datasets (schema), hermetic sandbox, graders, rubric judge, runner
   catalog.py   capabilities → agent tool definitions
   cli.py, runtime.py
-  web/         `rote ui`: typed API, agents (invoke + MCP), background runs and evals, event streaming (+ built UI)
+  web/         `rote engine`: typed API, agents (invoke + MCP), background runs and evals, event streaming
 src/mockbank/  the LegacyCore target app (not part of the system)
 backend/       the control plane: NestJS + Prisma/PostgreSQL REST API (see backend/README.md)
 ui/            the React + shadcn/ui frontend source (Vite)
@@ -318,24 +323,26 @@ evals/         eval datasets (results are written to runs/evals/)
 evidence/      generated demonstration runs (see evidence/README.md)
 scripts/       make_evidence.py, operator_bot.py
 tests/         unit + end-to-end (real Chromium against the mock) + the eval harness
-.github/       CI: lint, types, tests, offline evals, UI build check
+.github/       CI: lint, types, tests, offline evals, Docker image builds
 ```
 
 ## Development
 
 ```bash
-make check      # everything CI runs: lint, validate, tests, offline evals
-make test       # 67 Python tests (unit, end-to-end in a real browser, a handoff through the web UI, the eval
-                # harness, REST invoke and MCP over HTTP and stdio) + 18 UI tests (Vitest + Testing Library)
+make check      # everything CI runs: lint, validate, tests (incl. backend integration), offline evals
+make test       # 68 Python tests (unit, end-to-end in a real browser, a handoff through the web UI, the eval
+                # harness, REST invoke and MCP over HTTP and stdio), 44 UI tests (Vitest + Testing Library)
+                # and 97 backend unit tests (Jest)
+make test-backend-int  # 53 backend integration tests (real HTTP stack + PostgreSQL)
 make lint       # ruff check + ruff format --check + mypy; ESLint + Prettier + tsc. All clean.
 make fmt        # apply formatters and safe fixes
 make hooks      # install the pre-commit hooks (the same tools, from the project's own environments)
-make ui-dev     # hot-reloading UI on :5173 against a running `make ui`
-make ui-build   # rebuild src/rote/web/static from ui/
+make ui-dev     # hot-reloading UI on :5173 against the backend (ROTE_API_TARGET, default :3000)
+make ui-build   # build the UI into ui/dist (the control plane serves it; Docker builds it too)
 ```
 
 **Standards, enforced rather than described:**
 
 - **Python**: ruff for lint and format (pycodestyle, pyflakes, isort, bugbear, pyupgrade, simplify, async-safety, comprehensions, pathlib, timezone-aware datetimes, pytest style), mypy with the pydantic plugin, `strict` for new modules (`rote.evals`, `rote.web.evals`, `rote.web.agents`, `rote.web.models`).
 - **TypeScript**: `strict` tsc; ESLint flat config with type-checked `typescript-eslint` (strict + stylistic), the React Hooks rules including the React Compiler checks (purity, no setState in effects), react-refresh and jsx-a11y; Prettier with the Tailwind plugin. Zero warnings allowed.
-- **CI** ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)) runs all of it, gates on the offline evals, and fails if the committed UI build no longer matches its sources.
+- **CI** ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)) runs all of it (the backend against a real PostgreSQL), gates on the offline evals, checks that migrations match the schema, and builds both Docker images.
